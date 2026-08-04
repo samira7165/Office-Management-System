@@ -6,8 +6,8 @@ import { Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@officehub.io");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,14 +98,6 @@ export default function LoginPage() {
               Sign in
             </button>
           </form>
-
-          <div className="mt-6 text-xs text-muted bg-primary-light rounded-lg p-3 leading-relaxed">
-            <strong className="text-foreground">Demo credentials</strong>
-            <br />
-            Admin: admin@officehub.io / admin123
-            <br />
-            HR: farzana.yasmin@officehub.io / password123
-          </div>
         </div>
       </div>
     </div>
