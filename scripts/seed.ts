@@ -3,9 +3,15 @@ import bcrypt from "bcryptjs";
 import "dotenv/config";
 
 const DATABASE_URL = process.env.DATABASE_URL || "mysql://root:@localhost:3306/officehub";
+// mysql2 doesn't understand the `ssl-mode=REQUIRED` query param managed hosts (e.g. Aiven) put
+// in their connection URIs — it has to be passed as an explicit `ssl` option instead.
+const needsSSL = /ssl-?mode=REQUIRED/i.test(DATABASE_URL);
 
 async function main() {
-  const connection = await mysql.createConnection(DATABASE_URL);
+  const connection = await mysql.createConnection({
+    uri: DATABASE_URL,
+    ...(needsSSL ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
 
   await connection.query(`
     CREATE TABLE IF NOT EXISTS users (
