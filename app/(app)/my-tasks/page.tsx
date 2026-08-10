@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 
-type Employee = { id: number; name: string; avatarColor: string };
-type Task = { id: number; title: string; description: string; dueDate: string | null; priority: string; status: string; assignee: Employee | null };
+type Task = { id: number; title: string; description: string; dueDate: string | null; priority: string; status: string; assigneeId: number | null };
 
 const COLUMNS = [
   { key: "todo", label: "To do" },
@@ -14,31 +13,27 @@ const COLUMNS = [
   { key: "done", label: "Done" },
 ];
 
-export default function TasksPage() {
+export default function MyTasksPage() {
+  const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", assigneeId: "", dueDate: "", priority: "medium" });
+  const [form, setForm] = useState({ title: "", description: "", dueDate: "", priority: "medium" });
   const [error, setError] = useState("");
 
   async function load() {
-    const [t, e] = await Promise.all([
-      fetch("/api/tasks").then((r) => r.json()),
-      fetch("/api/employees").then((r) => r.json()),
-    ]);
+    const t = await fetch("/api/tasks").then((r) => r.json());
     setTasks(t);
-    setEmployees(e);
   }
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setEmployeeId(d.user?.employeeId ?? null));
+    load();
+  }, []);
+
+  const myTasks = useMemo(() => tasks.filter((t) => t.assigneeId === employeeId), [tasks, employeeId]);
 
   async function moveTask(id: number, status: string) {
     await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-    load();
-  }
-
-  async function deleteTask(id: number) {
-    if (!confirm("Delete this task?")) return;
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
     load();
   }
 
@@ -48,11 +43,11 @@ export default function TasksPage() {
     if (!form.title) { setError("Task title is required"); return; }
     const res = await fetch("/api/tasks", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, assigneeId: form.assigneeId ? Number(form.assigneeId) : null }),
+      body: JSON.stringify(form),
     });
     if (!res.ok) { const d = await res.json(); setError(d.error); return; }
     setModalOpen(false);
-    setForm({ title: "", description: "", assigneeId: "", dueDate: "", priority: "medium" });
+    setForm({ title: "", description: "", dueDate: "", priority: "medium" });
     load();
   }
 
@@ -69,36 +64,27 @@ export default function TasksPage() {
           <div key={col.key} className="card p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">{col.label}</h3>
-              <span className="text-xs text-muted">{tasks.filter((t) => t.status === col.key).length}</span>
+              <span className="text-xs text-muted">{myTasks.filter((t) => t.status === col.key).length}</span>
             </div>
             <div className="space-y-3 min-h-[80px]">
-              {tasks.filter((t) => t.status === col.key).map((t) => (
+              {myTasks.filter((t) => t.status === col.key).map((t) => (
                 <div key={t.id} className="border border-border rounded-xl p-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium">{t.title}</p>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge status={t.priority} />
-                      <button onClick={() => deleteTask(t.id)} className="text-muted hover:text-danger transition">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <Badge status={t.priority} />
                   </div>
                   {t.description && <p className="text-xs text-muted mt-1 line-clamp-2">{t.description}</p>}
                   <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-1.5">
-                      {t.assignee && (
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold" style={{ background: t.assignee.avatarColor }}>
-                          {t.assignee.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                        </div>
-                      )}
-                      {t.dueDate && <span className="text-[11px] text-muted">{t.dueDate}</span>}
-                    </div>
+                    {t.dueDate ? <span className="text-[11px] text-muted">{t.dueDate}</span> : <span />}
                     <select value={t.status} onChange={(e) => moveTask(t.id, e.target.value)} className="text-[11px] border border-border rounded-md px-1.5 py-1 outline-none">
                       {COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                     </select>
                   </div>
                 </div>
               ))}
+              {myTasks.filter((t) => t.status === col.key).length === 0 && (
+                <p className="text-xs text-muted text-center py-4">Nothing here.</p>
+              )}
             </div>
           </div>
         ))}
@@ -113,13 +99,6 @@ export default function TasksPage() {
           <div>
             <label className="text-sm font-medium block mb-1.5">Description</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1.5">Assignee</label>
-            <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30">
-              <option value="">Unassigned</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

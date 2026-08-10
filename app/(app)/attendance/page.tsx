@@ -5,7 +5,7 @@ import { LogIn, LogOut } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 
 type Employee = { id: number; name: string; avatarColor: string; position: string };
-type AttRow = { id: number; employeeId: number; date: string; checkIn: string | null; checkOut: string | null; status: string; employee: Employee | null };
+type AttRow = { id: number; employeeId: number; date: string; checkIn: string | null; checkOut: string | null; status: string; approvalStatus: string; employee: Employee | null };
 
 export default function AttendancePage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -44,6 +44,14 @@ export default function AttendancePage() {
     load();
   }
 
+  async function setApproval(id: number, approvalStatus: string) {
+    await fetch(`/api/attendance/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approvalStatus }),
+    });
+    load();
+  }
+
   const present = rows.filter((r) => r.status === "present").length;
   const late = rows.filter((r) => r.status === "late").length;
   const absent = rows.filter((r) => r.status === "absent").length;
@@ -67,6 +75,7 @@ export default function AttendancePage() {
               <th className="px-5 py-3 font-medium">Check-in</th>
               <th className="px-5 py-3 font-medium">Check-out</th>
               <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-5 py-3 font-medium">Approval</th>
               <th className="px-5 py-3 font-medium text-right">Action</th>
             </tr>
           </thead>
@@ -87,6 +96,17 @@ export default function AttendancePage() {
                 <td className="px-5 py-3 text-muted">{r.checkIn || "—"}</td>
                 <td className="px-5 py-3 text-muted">{r.checkOut || "—"}</td>
                 <td className="px-5 py-3"><Badge status={r.status} /></td>
+                <td className="px-5 py-3">
+                  {r.approvalStatus === "pending" ? (
+                    <div className="flex items-center gap-2">
+                      <Badge status={r.approvalStatus} />
+                      <button onClick={() => setApproval(r.id, "approved")} className="text-xs font-semibold text-success hover:underline">Approve</button>
+                      <button onClick={() => setApproval(r.id, "rejected")} className="text-xs font-semibold text-danger hover:underline">Reject</button>
+                    </div>
+                  ) : (
+                    <Badge status={r.approvalStatus} />
+                  )}
+                </td>
                 <td className="px-5 py-3 text-right">
                   {r.checkIn && !r.checkOut && (
                     <button onClick={() => checkOut(r.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-danger hover:underline">
@@ -112,6 +132,7 @@ export default function AttendancePage() {
                 <td className="px-5 py-3 text-muted">—</td>
                 <td className="px-5 py-3 text-muted">—</td>
                 <td className="px-5 py-3"><span className="text-xs text-muted">Not marked</span></td>
+                <td className="px-5 py-3 text-muted">—</td>
                 <td className="px-5 py-3 text-right">
                   <button onClick={() => checkIn(e.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
                     <LogIn className="w-3.5 h-3.5" /> Check in

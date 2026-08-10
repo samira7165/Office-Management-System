@@ -67,9 +67,19 @@ async function main() {
       date VARCHAR(16) NOT NULL,
       check_in VARCHAR(16),
       check_out VARCHAR(16),
-      status VARCHAR(16) NOT NULL DEFAULT 'present'
+      status VARCHAR(16) NOT NULL DEFAULT 'present',
+      approval_status VARCHAR(16) NOT NULL DEFAULT 'approved'
     )
   `);
+  {
+    const [cols]: any = await connection.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attendance'`
+    );
+    const colNames = cols.map((c: any) => c.COLUMN_NAME);
+    if (!colNames.includes("approval_status")) {
+      await connection.query(`ALTER TABLE attendance ADD COLUMN approval_status VARCHAR(16) NOT NULL DEFAULT 'approved'`);
+    }
+  }
   await connection.query(`
     CREATE TABLE IF NOT EXISTS leaves (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -207,6 +217,15 @@ async function main() {
   await connection.query(`INSERT INTO users (name, email, password, role, employee_id, created_at) VALUES (?,?,?,?,?,?)`,
     ["Farzana Yasmin", "farzana.yasmin@officehub.io", hrPass, "hr", empIds[6], new Date().toISOString()]);
 
+  // self-service logins for every other employee — same shared password, own email
+  const employeePass = await bcrypt.hash("employee123", 10);
+  for (const [i, empId] of empIds.entries()) {
+    if (empId === empIds[6]) continue; // Farzana already has an HR login
+    const [name, email] = employeesData[i];
+    await connection.query(`INSERT INTO users (name, email, password, role, employee_id, created_at) VALUES (?,?,?,?,?,?)`,
+      [name, email, employeePass, "employee", empId, new Date().toISOString()]);
+  }
+
   function fmtDate(d: Date) { return d.toISOString().slice(0, 10); }
   const today = new Date();
   for (const empId of empIds) {
@@ -222,6 +241,16 @@ async function main() {
       await connection.query(`INSERT INTO attendance (employee_id, date, check_in, check_out, status) VALUES (?,?,?,?,?)`,
         [empId, fmtDate(d), checkIn, checkOut, status]);
     }
+  }
+
+  // a couple of self-submitted, not-yet-approved entries to demo the approval flow
+  const pendingAttendance: [number, string][] = [
+    [empIds[1], "09:05"], // Tanvir Ahmed
+    [empIds[11], "09:12"], // Rima Sultana
+  ];
+  for (const [empId, checkIn] of pendingAttendance) {
+    await connection.query(`INSERT INTO attendance (employee_id, date, check_in, check_out, status, approval_status) VALUES (?,?,?,?,?,?)`,
+      [empId, fmtDate(today), checkIn, null, "present", "pending"]);
   }
 
   const leaveSamples: [number, string, string, string, string, string][] = [

@@ -20,9 +20,15 @@ const NAV = [
   { href: "/departments", label: "Departments", icon: Network },
 ];
 
-export default function Sidebar() {
+const EMPLOYEE_NAV = [
+  { href: "/my-attendance", label: "My Attendance", icon: CalendarCheck },
+  { href: "/my-tasks", label: "My Tasks", icon: ListChecks },
+];
+
+export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const nav = role === "employee" ? EMPLOYEE_NAV : NAV;
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -41,9 +47,9 @@ export default function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
         <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
-          HR Management
+          {role === "employee" ? "Self Service" : "HR Management"}
         </p>
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (

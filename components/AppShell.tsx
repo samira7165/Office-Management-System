@@ -14,6 +14,8 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/documents": { title: "Documents", subtitle: "Employee files & records" },
   "/tasks": { title: "Tasks", subtitle: "Assign and track work" },
   "/departments": { title: "Departments", subtitle: "Organize your teams" },
+  "/my-attendance": { title: "My Attendance", subtitle: "Check in, check out, track your record" },
+  "/my-tasks": { title: "My Tasks", subtitle: "Your assigned work" },
 };
 
 export default function AppShell({

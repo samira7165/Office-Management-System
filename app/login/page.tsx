@@ -6,11 +6,17 @@ import { Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"staff" | "employee">("staff");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function selectMode(m: "staff" | "employee") {
+    setMode(m);
+    setError("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +34,23 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+
+      const role = data.user?.role;
+      const isEmployee = role === "employee";
+      if (mode === "employee" && !isEmployee) {
+        await fetch("/api/auth/logout", { method: "POST" });
+        setError("This is an admin/HR account — use the Admin / HR login instead.");
+        setLoading(false);
+        return;
+      }
+      if (mode === "staff" && isEmployee) {
+        await fetch("/api/auth/logout", { method: "POST" });
+        setError("This is an employee account — use the Employee login instead.");
+        setLoading(false);
+        return;
+      }
+
+      router.push(isEmployee ? "/my-attendance" : "/dashboard");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -49,6 +71,27 @@ export default function LoginPage() {
         <div className="card p-8 shadow-sm">
           <h1 className="text-xl font-semibold mb-1">Welcome back</h1>
           <p className="text-sm text-muted mb-6">Sign in to manage your office</p>
+
+          <div className="grid grid-cols-2 gap-1.5 bg-background rounded-lg p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => selectMode("staff")}
+              className={`text-sm font-semibold rounded-md py-2 transition ${
+                mode === "staff" ? "bg-primary text-white" : "text-muted hover:text-foreground"
+              }`}
+            >
+              Admin / HR
+            </button>
+            <button
+              type="button"
+              onClick={() => selectMode("employee")}
+              className={`text-sm font-semibold rounded-md py-2 transition ${
+                mode === "employee" ? "bg-primary text-white" : "text-muted hover:text-foreground"
+              }`}
+            >
+              Employee
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

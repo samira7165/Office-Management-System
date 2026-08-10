@@ -40,6 +40,7 @@ export const attendance = mysqlTable("attendance", {
   checkIn: varchar("check_in", { length: 16 }),
   checkOut: varchar("check_out", { length: 16 }),
   status: varchar("status", { length: 16 }).notNull().default("present"), // present | absent | late | half_day
+  approvalStatus: varchar("approval_status", { length: 16 }).notNull().default("approved"), // pending | approved | rejected
 });
 
 export const leaves = mysqlTable("leaves", {
