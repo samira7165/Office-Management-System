@@ -5,7 +5,7 @@ import { Plus, FileText, Trash2, Download } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 
 type Employee = { id: number; name: string };
-type Doc = { id: number; name: string; category: string; uploadDate: string; size: string; employee: Employee | null };
+type Doc = { id: number; name: string; category: string; uploadDate: string; size: string; url: string | null; employee: Employee | null };
 
 const CAT_COLORS: Record<string, string> = {
   contract: "var(--primary)", id: "var(--info)", certificate: "var(--success)", general: "var(--muted)",
@@ -15,8 +15,10 @@ export default function DocumentsPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({ name: "", employeeId: "", category: "general" });
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   async function load() {
     const [d, e] = await Promise.all([
@@ -28,22 +30,35 @@ export default function DocumentsPage() {
   }
   useEffect(() => { load(); }, []);
 
+  function onFileChange(f: File | null) {
+    setFile(f);
+    if (f && !form.name) setForm({ ...form, name: f.name });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!file) { setError("Choose a file to upload"); return; }
     if (!form.name) { setError("Document name is required"); return; }
-    const res = await fetch("/api/documents", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, employeeId: form.employeeId ? Number(form.employeeId) : null, size: `${Math.floor(Math.random() * 900 + 50)} KB` }),
-    });
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("name", form.name);
+    fd.append("category", form.category);
+    if (form.employeeId) fd.append("employeeId", form.employeeId);
+
+    setUploading(true);
+    const res = await fetch("/api/documents", { method: "POST", body: fd });
+    setUploading(false);
     if (!res.ok) { const d = await res.json(); setError(d.error); return; }
     setModalOpen(false);
     setForm({ name: "", employeeId: "", category: "general" });
+    setFile(null);
     load();
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this document record?")) return;
+    if (!confirm("Delete this document?")) return;
     await fetch(`/api/documents/${id}`, { method: "DELETE" });
     load();
   }
@@ -68,7 +83,15 @@ export default function DocumentsPage() {
               <p className="text-xs text-muted">{d.uploadDate}</p>
             </div>
             <div className="flex flex-col gap-1.5">
-              <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition"><Download className="w-3.5 h-3.5" /></button>
+              {d.url ? (
+                <a href={`/api/documents/${d.id}/download`} className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition">
+                  <Download className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <span className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted/40 cursor-not-allowed" title="No file attached">
+                  <Download className="w-3.5 h-3.5" />
+                </span>
+              )}
               <button onClick={() => handleDelete(d.id)} className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted hover:text-danger hover:bg-danger-light transition"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           </div>
@@ -78,6 +101,14 @@ export default function DocumentsPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add document">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium block mb-1.5">File</label>
+            <input
+              type="file"
+              onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+              className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary-light file:text-primary file:text-xs file:font-semibold"
+            />
+          </div>
           <div>
             <label className="text-sm font-medium block mb-1.5">Document name</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Employment Contract.pdf" className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
@@ -101,7 +132,9 @@ export default function DocumentsPage() {
           {error && <div className="text-sm text-danger bg-danger-light rounded-lg px-3 py-2">{error}</div>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2.5 text-sm font-medium rounded-lg border border-border hover:bg-background">Cancel</button>
-            <button type="submit" className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-primary-dark">Add document</button>
+            <button type="submit" disabled={uploading} className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-70">
+              {uploading ? "Uploading…" : "Add document"}
+            </button>
           </div>
         </form>
       </Modal>

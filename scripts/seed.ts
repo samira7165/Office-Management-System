@@ -113,9 +113,19 @@ async function main() {
       name VARCHAR(191) NOT NULL,
       category VARCHAR(32) NOT NULL DEFAULT 'general',
       upload_date VARCHAR(16) NOT NULL,
-      size VARCHAR(32) DEFAULT '—'
+      size VARCHAR(32) DEFAULT '—',
+      url VARCHAR(512)
     )
   `);
+  {
+    const [cols]: any = await connection.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'documents'`
+    );
+    const colNames = cols.map((c: any) => c.COLUMN_NAME);
+    if (!colNames.includes("url")) {
+      await connection.query(`ALTER TABLE documents ADD COLUMN url VARCHAR(512)`);
+    }
+  }
   await connection.query(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INT AUTO_INCREMENT PRIMARY KEY,

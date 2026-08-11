@@ -74,6 +74,7 @@ export const documents = mysqlTable("documents", {
   category: varchar("category", { length: 32 }).notNull().default("general"), // contract | id | certificate | general
   uploadDate: varchar("upload_date", { length: 16 }).notNull(),
   size: varchar("size", { length: 32 }).default("—"),
+  url: varchar("url", { length: 512 }), // Vercel Blob URL of the uploaded file, null for legacy/sample records
 });
 
 export const transactions = mysqlTable("transactions", {
