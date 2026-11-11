@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     email: user.email,
     role: user.role,
     employeeId: user.employeeId,
+    departmentId: user.departmentId,
   });
   return NextResponse.json({ ok: true, user: { name: user.name, email: user.email, role: user.role } });
 }

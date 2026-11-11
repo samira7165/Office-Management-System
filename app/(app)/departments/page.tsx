@@ -17,10 +17,13 @@ const EMPTY = { name: "", description: "", color: "#6C5DD3", headEmployeeId: "",
 export default function DepartmentsPage() {
   const [depts, setDepts] = useState<Dept[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [role, setRole] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Dept | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState("");
+
+  const canManage = role === "SUPER_ADMIN" || role === "HR";
 
   async function load() {
     const [d, e] = await Promise.all([
@@ -30,7 +33,10 @@ export default function DepartmentsPage() {
     setDepts(d);
     setEmployees(e);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
+  }, []);
 
   function openAdd() {
     setEditing(null);
@@ -71,20 +77,24 @@ export default function DepartmentsPage() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
-          <Plus className="w-4 h-4" /> Add department
-        </button>
+        {canManage && (
+          <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
+            <Plus className="w-4 h-4" /> Add department
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {depts.map((d) => (
           <Link key={d.id} href={`/departments/${d.id}`} className="card p-5 block relative group hover:shadow-md transition">
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(d); }}
-              className="absolute top-4 right-4 w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition opacity-0 group-hover:opacity-100"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
+            {canManage && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(d); }}
+                className="absolute top-4 right-4 w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition opacity-0 group-hover:opacity-100"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: `${d.color}1a`, color: d.color }}>
               <Users className="w-5 h-5" />
             </div>

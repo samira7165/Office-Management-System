@@ -1,40 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { departments, employees } from "@/lib/schema";
+import { departments, employees, users } from "@/lib/schema";
 import { eq, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
+import { alias } from "drizzle-orm/pg-core";
+import { getSession } from "@/lib/auth";
+import { checkAccess, resolveHeadId } from "@/lib/authz";
 
-const head = alias(employees, "head");
+const headUser = alias(users, "head_user");
+const headEmployee = alias(employees, "head_employee");
 
 export async function GET() {
+  const session = await getSession();
+  const { allowed, scope } = await checkAccess(session, "DEPARTMENTS", "VIEW");
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const rows = await db
     .select({
       id: departments.id,
       name: departments.name,
       description: departments.description,
       color: departments.color,
-      headEmployeeId: departments.headEmployeeId,
       budget: departments.budget,
       headcount: sql<number>`count(distinct ${employees.id})`,
-      head: { id: head.id, name: head.name, avatarColor: head.avatarColor },
+      headEmployeeId: headEmployee.id,
+      headName: headUser.name,
+      headAvatarColor: headEmployee.avatarColor,
     })
     .from(departments)
     .leftJoin(employees, eq(employees.departmentId, departments.id))
-    .leftJoin(head, eq(head.id, departments.headEmployeeId))
-    .groupBy(departments.id, head.id);
-  return NextResponse.json(rows.map((r) => ({ ...r, head: r.head?.id ? r.head : null })));
+    .leftJoin(headUser, eq(headUser.id, departments.headId))
+    .leftJoin(headEmployee, eq(headEmployee.id, headUser.employeeId))
+    .groupBy(departments.id, headUser.id, headEmployee.id);
+
+  let data = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    color: r.color,
+    budget: r.budget,
+    headcount: r.headcount,
+    headEmployeeId: r.headEmployeeId ?? null,
+    head: r.headEmployeeId ? { id: r.headEmployeeId, name: r.headName, avatarColor: r.headAvatarColor } : null,
+  }));
+
+  // DEPARTMENTS' "SELF" scope means "my own department", not "my own employee record" —
+  // the one module where that idiom applies (see DEPT_HEAD/EMPLOYEE rows in lib/authz.ts).
+  if (scope === "SELF") {
+    data = data.filter((d) => d.id === session!.departmentId);
+  } else if (scope === "DEPARTMENT") {
+    data = data.filter((d) => d.id === session!.departmentId);
+  }
+  return NextResponse.json(data);
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  const { allowed } = await checkAccess(session, "DEPARTMENTS", "CREATE");
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json();
   if (!body.name) return NextResponse.json({ error: "Department name is required" }, { status: 400 });
-  const [result] = await db.insert(departments).values({
+  const [created] = await db.insert(departments).values({
     name: body.name,
     description: body.description || "",
     color: body.color || "#6C5DD3",
-    headEmployeeId: body.headEmployeeId || null,
+    headId: await resolveHeadId(body.headEmployeeId),
     budget: Number(body.budget || 0),
-  });
-  const [created] = await db.select().from(departments).where(eq(departments.id, result.insertId));
+  }).returning();
   return NextResponse.json(created, { status: 201 });
 }

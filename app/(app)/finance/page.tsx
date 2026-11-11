@@ -163,7 +163,7 @@ export default function FinancePage() {
                       {(i.status === "unpaid" || i.status === "overdue") && (
                         <button onClick={() => markPaid(i.id)} className="text-xs font-semibold text-primary hover:underline">Mark paid</button>
                       )}
-                      {role === "admin" && (
+                      {role === "SUPER_ADMIN" && (
                         <button onClick={() => handleDeleteInvoice(i.id)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-danger-light hover:text-danger transition">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

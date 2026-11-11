@@ -11,6 +11,7 @@ export default function AttendancePage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [rows, setRows] = useState<AttRow[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [role, setRole] = useState("");
 
   async function load() {
     const [a, e] = await Promise.all([
@@ -22,6 +23,11 @@ export default function AttendancePage() {
   }
 
   useEffect(() => { load(); }, [date]);
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
+  }, []);
+
+  const canManage = role !== "TEAM_LEAD";
 
   const marked = new Set(rows.map((r) => r.employeeId));
   const unmarked = employees.filter((e) => !marked.has(e.id));
@@ -97,7 +103,7 @@ export default function AttendancePage() {
                 <td className="px-5 py-3 text-muted">{r.checkOut || "—"}</td>
                 <td className="px-5 py-3"><Badge status={r.status} /></td>
                 <td className="px-5 py-3">
-                  {r.approvalStatus === "pending" ? (
+                  {canManage && r.approvalStatus === "pending" ? (
                     <div className="flex items-center gap-2">
                       <Badge status={r.approvalStatus} />
                       <button onClick={() => setApproval(r.id, "approved")} className="text-xs font-semibold text-success hover:underline">Approve</button>
@@ -108,7 +114,7 @@ export default function AttendancePage() {
                   )}
                 </td>
                 <td className="px-5 py-3 text-right">
-                  {r.checkIn && !r.checkOut && (
+                  {canManage && r.checkIn && !r.checkOut && (
                     <button onClick={() => checkOut(r.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-danger hover:underline">
                       <LogOut className="w-3.5 h-3.5" /> Check out
                     </button>
@@ -134,9 +140,11 @@ export default function AttendancePage() {
                 <td className="px-5 py-3"><span className="text-xs text-muted">Not marked</span></td>
                 <td className="px-5 py-3 text-muted">—</td>
                 <td className="px-5 py-3 text-right">
-                  <button onClick={() => checkIn(e.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
-                    <LogIn className="w-3.5 h-3.5" /> Check in
-                  </button>
+                  {canManage && (
+                    <button onClick={() => checkIn(e.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                      <LogIn className="w-3.5 h-3.5" /> Check in
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

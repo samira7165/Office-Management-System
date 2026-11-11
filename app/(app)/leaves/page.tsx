@@ -11,6 +11,7 @@ type Leave = { id: number; type: string; startDate: string; endDate: string; rea
 export default function LeavesPage() {
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [role, setRole] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ employeeId: "", type: "casual", startDate: "", endDate: "", reason: "" });
   const [error, setError] = useState("");
@@ -23,7 +24,10 @@ export default function LeavesPage() {
     setLeaves(l);
     setEmployees(e);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
+  }, []);
 
   async function updateStatus(id: number, status: string) {
     await fetch(`/api/leaves/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
@@ -73,7 +77,11 @@ export default function LeavesPage() {
                 <td className="px-5 py-3 text-muted max-w-[220px] truncate">{l.reason || "—"}</td>
                 <td className="px-5 py-3"><Badge status={l.status} /></td>
                 <td className="px-5 py-3">
-                  {l.status === "pending" ? (
+                  {role === "TEAM_LEAD" && l.status === "pending" ? (
+                    <div className="flex items-center justify-end">
+                      <button onClick={() => updateStatus(l.id, "recommended")} className="text-xs font-semibold text-primary hover:underline">Recommend</button>
+                    </div>
+                  ) : role !== "TEAM_LEAD" && (l.status === "pending" || l.status === "recommended") ? (
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => updateStatus(l.id, "approved")} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-success-light hover:text-success transition">
                         <Check className="w-3.5 h-3.5" />

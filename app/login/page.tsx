@@ -36,7 +36,7 @@ export default function LoginPage() {
       }
 
       const role = data.user?.role;
-      const isEmployee = role === "employee";
+      const isEmployee = role === "EMPLOYEE";
       if (mode === "employee" && !isEmployee) {
         await fetch("/api/auth/logout", { method: "POST" });
         setError("This is an admin/HR account — use the Admin / HR login instead.");

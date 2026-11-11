@@ -10,6 +10,7 @@ const MAP: Record<string, { bg: string; text: string; label?: string }> = {
   on_leave: { bg: "var(--warning-light)", text: "var(--warning)", label: "On leave" },
   late: { bg: "var(--warning-light)", text: "var(--warning)" },
   pending: { bg: "var(--warning-light)", text: "var(--warning)" },
+  recommended: { bg: "var(--info-light)", text: "var(--info)" },
   todo: { bg: "var(--info-light)", text: "var(--info)", label: "To do" },
   in_progress: { bg: "var(--info-light)", text: "var(--info)", label: "In progress" },
   half_day: { bg: "var(--info-light)", text: "var(--info)", label: "Half day" },

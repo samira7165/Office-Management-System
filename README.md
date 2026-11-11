@@ -35,9 +35,7 @@ npm run seed      # creates tables in officehub and fills them with sample data
 npm run dev        # http://localhost:3000
 ```
 
-Login with:
-- **Admin:** admin@officehub.io / admin123
-- **HR:** farzana.yasmin@officehub.io / password123
+  
 
 Re-run `npm run seed` anytime to reset the database back to sample data
 (it wipes and reseeds all tables).

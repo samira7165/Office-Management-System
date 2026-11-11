@@ -19,22 +19,50 @@ type Stats = {
 
 type LeaveRow = { id: number; type: string; status: string; startDate: string; endDate: string; employee: { name: string } | null };
 type TaskRow = { id: number; title: string; status: string; priority: string; dueDate: string | null; assignee: { name: string } | null };
+type Dept = { id: number; name: string };
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [leaves, setLeaves] = useState<LeaveRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [role, setRole] = useState("");
+  const [departments, setDepartments] = useState<Dept[]>([]);
+  const [selectedDept, setSelectedDept] = useState("");
 
   useEffect(() => {
-    fetch("/api/dashboard/stats").then((r) => r.json()).then(setStats);
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
+  }, []);
+
+  useEffect(() => {
+    if (role === "SUPER_ADMIN") {
+      fetch("/api/departments").then((r) => r.json()).then(setDepartments);
+    }
+  }, [role]);
+
+  useEffect(() => {
+    const qs = selectedDept ? `?departmentId=${selectedDept}` : "";
+    fetch(`/api/dashboard/stats${qs}`).then((r) => r.json()).then(setStats);
     fetch("/api/leaves").then((r) => r.json()).then((d) => setLeaves(d.slice(0, 5)));
     fetch("/api/tasks").then((r) => r.json()).then((d) => setTasks(d.slice(0, 5)));
-  }, []);
+  }, [selectedDept]);
 
   if (!stats) return <div className="text-sm text-muted">Loading dashboard...</div>;
 
   return (
     <div className="space-y-6">
+      {role === "SUPER_ADMIN" && departments.length > 0 && (
+        <div className="flex justify-end">
+          <select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+            className="rounded-lg border border-border px-3.5 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">All departments</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Total Employees" value={stats.totalEmployees} icon={Users} tint="primary" />
         <StatCard label="Active" value={stats.activeEmployees} icon={UserCheck} tint="success" />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Search, Pencil, Trash2, Mail, Phone } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
+import { usePermission } from "@/components/PermissionsProvider";
 
 type Dept = { id: number; name: string };
 type Employee = {
@@ -20,11 +21,14 @@ const EMPTY = {
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Dept[]>([]);
+  const [role, setRole] = useState("");
   const [q, setQ] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<typeof EMPTY>(EMPTY);
   const [error, setError] = useState("");
+
+  const canManage = role === "SUPER_ADMIN" || role === "HR";
 
   async function load() {
     const [e, d] = await Promise.all([
@@ -35,7 +39,10 @@ export default function EmployeesPage() {
     setDepartments(d);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
+  }, []);
 
   function openAdd() {
     setEditing(null);
@@ -94,9 +101,11 @@ export default function EmployeesPage() {
           <Search className="w-4 h-4 text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search employees..." className="bg-transparent text-sm outline-none w-full" />
         </div>
-        <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
-          <Plus className="w-4 h-4" /> Add employee
-        </button>
+        {canManage && (
+          <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
+            <Plus className="w-4 h-4" /> Add employee
+          </button>
+        )}
       </div>
 
       <div className="card overflow-x-auto">
@@ -133,14 +142,16 @@ export default function EmployeesPage() {
                 <td className="px-5 py-3 text-muted">{e.joinDate}</td>
                 <td className="px-5 py-3"><Badge status={e.status} /></td>
                 <td className="px-5 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => openEdit(e)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary-light hover:text-primary transition">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => handleDelete(e.id)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-danger-light hover:text-danger transition">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {canManage && (
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => openEdit(e)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary-light hover:text-primary transition">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDelete(e.id)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-danger-light hover:text-danger transition">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

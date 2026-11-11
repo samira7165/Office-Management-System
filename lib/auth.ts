@@ -11,6 +11,7 @@ export type SessionPayload = {
   email: string;
   role: string;
   employeeId: number | null;
+  departmentId: number | null;
 };
 
 export async function createSession(payload: SessionPayload) {

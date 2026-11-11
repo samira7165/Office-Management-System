@@ -5,30 +5,101 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutGrid, Users, CalendarCheck, CalendarDays, Plane,
   Wallet, FileText, ListChecks, Building2, LogOut, Network, Landmark,
+  type LucideIcon,
 } from "lucide-react";
+import type { Module, Scope } from "@/lib/authz";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/employees", label: "Employees", icon: Users },
-  { href: "/attendance", label: "Attendance", icon: CalendarCheck },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/leaves", label: "Leaves", icon: Plane },
-  { href: "/payroll", label: "Payroll", icon: Wallet },
-  { href: "/finance", label: "Finance", icon: Landmark },
-  { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
-  { href: "/departments", label: "Departments", icon: Network },
+type PermissionEntry = { module: Module; action: string; scope: Scope };
+type NavItem = { href: string; label: string; icon: LucideIcon };
+
+// Module -> page. Resolves a role's scope on a module to the page that renders it, so the
+// nav is generated from permission rows rather than hardcoded per role — a role that gains
+// a new (module, VIEW) permission row picks up the matching item automatically, with no
+// sidebar code changes. Modules with no page built yet (ANNOUNCEMENTS, AUDIT_LOG, and
+// FINANCE outside ALL scope) resolve to null and are simply omitted.
+const MODULE_ORDER: Module[] = [
+  "DASHBOARD", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
+  "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
+  "ANNOUNCEMENTS", "AUDIT_LOG",
 ];
 
-const EMPLOYEE_NAV = [
-  { href: "/my-attendance", label: "My Attendance", icon: CalendarCheck },
-  { href: "/my-tasks", label: "My Tasks", icon: ListChecks },
-];
+const MODULE_ICON: Record<Module, LucideIcon> = {
+  DASHBOARD: LayoutGrid,
+  EMPLOYEES: Users,
+  ATTENDANCE: CalendarCheck,
+  LEAVES: Plane,
+  TASKS: ListChecks,
+  PAYROLL: Wallet,
+  DOCUMENTS: FileText,
+  FINANCE: Landmark,
+  DEPARTMENTS: Network,
+  CALENDAR: CalendarDays,
+  ANNOUNCEMENTS: CalendarDays,
+  AUDIT_LOG: Network,
+};
 
-export default function Sidebar({ role }: { role: string }) {
+function resolveNavItem(module: Module, scope: Scope): { href: string; label: string } | null {
+  switch (module) {
+    case "DASHBOARD":
+      return { href: "/dashboard", label: "Dashboard" };
+    case "EMPLOYEES":
+      if (scope === "ALL") return { href: "/employees", label: "All Employees" };
+      if (scope === "DEPARTMENT") return { href: "/employees", label: "My Team" };
+      return { href: "/employees", label: "My Profile" };
+    case "ATTENDANCE":
+      if (scope === "SELF") return { href: "/my-attendance", label: "My Attendance" };
+      return { href: "/attendance", label: scope === "DEPARTMENT" ? "Team Attendance" : "Attendance" };
+    case "LEAVES":
+      if (scope === "SELF") return { href: "/my-leaves", label: "My Leaves" };
+      return { href: "/leaves", label: scope === "DEPARTMENT" ? "Team Leaves" : "Leaves" };
+    case "TASKS":
+      if (scope === "SELF") return { href: "/my-tasks", label: "My Tasks" };
+      return { href: "/tasks", label: scope === "DEPARTMENT" ? "Team Tasks" : "Tasks" };
+    case "PAYROLL":
+      if (scope === "SELF") return { href: "/my-payroll", label: "My Payroll" };
+      return { href: "/payroll", label: scope === "DEPARTMENT" ? "Payroll Summary" : "Payroll" };
+    case "DOCUMENTS":
+      if (scope === "SELF") return { href: "/my-documents", label: "My Documents" };
+      return { href: "/documents", label: scope === "DEPARTMENT" ? "Department Docs" : "Documents" };
+    case "FINANCE":
+      return scope === "ALL" ? { href: "/finance", label: "Finance" } : null;
+    case "DEPARTMENTS":
+      return scope === "ALL" ? { href: "/departments", label: "Departments" } : { href: "/departments", label: "My Department" };
+    case "CALENDAR":
+      return { href: "/calendar", label: scope === "DEPARTMENT" ? "Team Calendar" : "Calendar" };
+    default:
+      return null; // ANNOUNCEMENTS, AUDIT_LOG — no page built yet
+  }
+}
+
+function navFor(permissions: PermissionEntry[]): NavItem[] {
+  const scopeByModule = new Map<Module, Scope>();
+  for (const p of permissions) {
+    if (p.action === "VIEW") scopeByModule.set(p.module, p.scope);
+  }
+  const items: NavItem[] = [];
+  for (const module of MODULE_ORDER) {
+    const scope = scopeByModule.get(module);
+    if (!scope) continue;
+    const resolved = resolveNavItem(module, scope);
+    if (!resolved) continue;
+    items.push({ ...resolved, icon: MODULE_ICON[module] });
+  }
+  return items;
+}
+
+const GROUP_LABEL: Record<string, string> = {
+  EMPLOYEE: "Self Service",
+  DEPT_HEAD: "Team Management",
+  TEAM_LEAD: "Team Management",
+  HR: "HR Management",
+  SUPER_ADMIN: "Administration",
+};
+
+export default function Sidebar({ role, permissions }: { role: string; permissions: PermissionEntry[] }) {
   const pathname = usePathname();
   const router = useRouter();
-  const nav = role === "employee" ? EMPLOYEE_NAV : NAV;
+  const nav = navFor(permissions);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -47,14 +118,14 @@ export default function Sidebar({ role }: { role: string }) {
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
         <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
-          {role === "employee" ? "Self Service" : "HR Management"}
+          {GROUP_LABEL[role] || "Menu"}
         </p>
         {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
             <Link
-              key={item.href}
+              key={item.href + item.label}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                 active

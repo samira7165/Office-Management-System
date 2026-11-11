@@ -1,7 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Topbar from "./Topbar";
+import DeniedToast from "./DeniedToast";
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Overview of your office" },
@@ -16,6 +18,9 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/departments": { title: "Departments", subtitle: "Organize your teams" },
   "/my-attendance": { title: "My Attendance", subtitle: "Check in, check out, track your record" },
   "/my-tasks": { title: "My Tasks", subtitle: "Your assigned work" },
+  "/my-leaves": { title: "My Leaves", subtitle: "Apply for and track your leave requests" },
+  "/my-payroll": { title: "My Payroll", subtitle: "Your payslips & payment history" },
+  "/my-documents": { title: "My Documents", subtitle: "Your personal files & records" },
 };
 
 export default function AppShell({
@@ -33,6 +38,9 @@ export default function AppShell({
 
   return (
     <>
+      <Suspense fallback={null}>
+        <DeniedToast />
+      </Suspense>
       <Topbar title={meta.title} subtitle={meta.subtitle} userName={userName} userRole={userRole} />
       <main className="p-6">{children}</main>
     </>
