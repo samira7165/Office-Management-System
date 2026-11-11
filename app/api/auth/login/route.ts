@@ -10,7 +10,13 @@ export async function POST(req: NextRequest) {
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
-  const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+  let user;
+  try {
+    [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+  } catch (err) {
+    console.error("Login DB error:", err);
+    return NextResponse.json({ error: "Database unavailable. Please try again later." }, { status: 503 });
+  }
   if (!user) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
