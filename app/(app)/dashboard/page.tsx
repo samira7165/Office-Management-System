@@ -5,6 +5,7 @@ import { Users, UserCheck, Plane, Wallet, CheckCircle2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
+import RevenueAnalysis from "@/components/RevenueAnalysis";
 
 type Stats = {
   totalEmployees: number;
@@ -50,6 +51,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {role === "SUPER_ADMIN" && <RevenueAnalysis />}
+
       {role === "SUPER_ADMIN" && departments.length > 0 && (
         <div className="flex justify-end">
           <select
