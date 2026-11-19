@@ -133,7 +133,7 @@ export default function FinancePage() {
     setTxForm({
       ...EMPTY_TX, type: "cash_in", category: deal.category, date: today(), account: accountOf(deal),
       amount: String(deal.deal?.due ?? ""), clientId: deal.clientId ? String(deal.clientId) : "",
-      parentId: String(deal.id), description: deal.description ? `Payment — ${deal.description}` : "",
+      parentId: String(deal.id), description: deal.description ? `Payment for ${deal.description}` : "",
     });
     setTxReceipt(null);
     setTxError("");
@@ -369,7 +369,7 @@ export default function FinancePage() {
                           <p className="font-medium whitespace-nowrap">{t.client.name}</p>
                           <div className="mt-1"><Badge status={t.client.type} /></div>
                         </>
-                      ) : <span className="text-muted">—</span>}
+                      ) : <span className="text-muted">N/A</span>}
                     </td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
                       <p className={`font-semibold ${inflow ? "text-success" : "text-danger"}`}>{inflow ? "+" : "−"} {taka(t.amount)}</p>
@@ -382,9 +382,9 @@ export default function FinancePage() {
                         </>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-muted">{accountOf(t) || "—"}</td>
+                    <td className="px-5 py-3 text-muted">{accountOf(t) || "N/A"}</td>
                     <td className="px-5 py-3 text-muted max-w-[240px]" title={t.description || ""}>
-                      <p className="truncate">{t.description || "—"}</p>
+                      <p className="truncate">{t.description || "N/A"}</p>
                       {t.parent && (
                         <p className="text-[11px] text-primary mt-0.5 truncate">
                           ↳ payment for {t.parent.date} deal{t.parent.dealAmount != null ? ` (${taka(t.parent.dealAmount)})` : ""}
@@ -511,11 +511,11 @@ export default function FinancePage() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted mt-1.5">{isOut ? "Money going out — subtracted from the net balance." : "Money coming in — added to the net balance."}</p>
+            <p className="text-xs text-muted mt-1.5">{isOut ? "Money going out, subtracted from the net balance." : "Money coming in, added to the net balance."}</p>
           </div>
           <div>
             <label className="text-sm font-medium block mb-1.5">
-              Client <span className="text-muted font-normal">(optional — who paid, or who was paid)</span>
+              Client <span className="text-muted font-normal">(optional: who paid, or who was paid)</span>
             </label>
             <select value={txForm.clientId} disabled={!!txForm.parentId} onChange={(e) => setTxForm({ ...txForm, clientId: e.target.value })} className={`${inputCls} disabled:bg-background disabled:text-muted`}>
               <option value="">No client</option>
@@ -576,7 +576,7 @@ export default function FinancePage() {
                 />
                 <span>
                   <span className="text-sm font-medium block">Advance / partial payment</span>
-                  <span className="text-xs text-muted">The client is paying part now — the rest stays as &quot;due&quot; until you add more payments.</span>
+                  <span className="text-xs text-muted">The client is paying part now. The rest stays as &quot;due&quot; until you add more payments.</span>
                 </span>
               </label>
               {showAdvance && (
@@ -613,7 +613,7 @@ export default function FinancePage() {
           </div>
           <div>
             <label className="text-sm font-medium block mb-1.5">
-              Receipt <span className="text-muted font-normal">(bKash / bank slip — image or PDF, max 4 MB)</span>
+              Receipt <span className="text-muted font-normal">(bKash or bank slip, image or PDF, max 4 MB)</span>
             </label>
             <label className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3.5 py-2.5 text-sm cursor-pointer hover:border-primary">
               <Paperclip className="w-4 h-4 text-muted" />

@@ -245,10 +245,10 @@ export default function ProjectsPage() {
                           <span className="w-2 h-2 rounded-full" style={{ background: p.department.color || "#6C5DD3" }} />
                           {p.department.name}
                         </span>
-                      ) : "—"}
+                      ) : "N/A"}
                     </td>
                   )}
-                  <td className="px-5 py-3 text-muted">{p.manager?.name || "—"}</td>
+                  <td className="px-5 py-3 text-muted">{p.manager?.name || "N/A"}</td>
                   <td className="px-5 py-3 font-semibold text-right whitespace-nowrap">{money(p.value)}</td>
                   <td className="px-5 py-3 text-muted whitespace-nowrap">
                     <p>{p.startDate} → {p.endDate || "ongoing"}</p>
@@ -353,7 +353,7 @@ export default function ProjectsPage() {
           </div>
           {formLongTerm !== null && (
             <p className="text-xs text-muted -mt-1">
-              {durationLabel(form.startDate, form.endDate || null)} — this will count as{" "}
+              {durationLabel(form.startDate, form.endDate || null)}, so this will count as{" "}
               <span className="font-semibold text-foreground">{formLongTerm ? "long-term" : "short-term"}</span>{" "}
               (long-term = over {LONG_TERM_MONTHS} months or no end date).
             </p>

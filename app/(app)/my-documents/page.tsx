@@ -25,7 +25,7 @@ export default function MyDocumentsPage() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium text-sm truncate">{d.name}</p>
-            <p className="text-xs text-muted mt-0.5">{d.size}</p>
+            <p className="text-xs text-muted mt-0.5">{d.size && d.size !== "—" ? d.size : ""}</p>
             <p className="text-xs text-muted">{d.uploadDate}</p>
           </div>
           {d.url ? (

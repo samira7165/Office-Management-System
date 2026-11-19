@@ -134,10 +134,10 @@ export default function EmployeesPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-muted">{e.department?.name || "—"}</td>
+                <td className="px-5 py-3 text-muted">{e.department?.name || "N/A"}</td>
                 <td className="px-5 py-3">
                   <p className="flex items-center gap-1.5 text-xs text-muted"><Mail className="w-3 h-3" />{e.email}</p>
-                  <p className="flex items-center gap-1.5 text-xs text-muted mt-0.5"><Phone className="w-3 h-3" />{e.phone || "—"}</p>
+                  <p className="flex items-center gap-1.5 text-xs text-muted mt-0.5"><Phone className="w-3 h-3" />{e.phone || "N/A"}</p>
                 </td>
                 <td className="px-5 py-3 text-muted">{e.joinDate}</td>
                 <td className="px-5 py-3"><Badge status={e.status} /></td>

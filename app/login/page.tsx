@@ -39,13 +39,13 @@ export default function LoginPage() {
       const isEmployee = role === "EMPLOYEE";
       if (mode === "employee" && !isEmployee) {
         await fetch("/api/auth/logout", { method: "POST" });
-        setError("This is an admin/HR account — use the Admin / HR login instead.");
+        setError("This is an admin/HR account. Please use the Admin / HR login instead.");
         setLoading(false);
         return;
       }
       if (mode === "staff" && isEmployee) {
         await fetch("/api/auth/logout", { method: "POST" });
-        setError("This is an employee account — use the Employee login instead.");
+        setError("This is an employee account. Please use the Employee login instead.");
         setLoading(false);
         return;
       }

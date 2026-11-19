@@ -121,7 +121,7 @@ export default function DepartmentDetailPage() {
           </div>
           <p className="text-xs text-muted mt-2">
             ৳{detail.monthlyCost.toLocaleString()} of ৳{detail.budget.toLocaleString()} monthly budget used
-            {usagePct > 100 && <span className="text-danger font-medium"> — over budget</span>}
+            {usagePct > 100 && <span className="text-danger font-medium"> (over budget)</span>}
           </p>
         </div>
       )}

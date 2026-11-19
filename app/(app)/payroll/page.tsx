@@ -96,7 +96,7 @@ export default function PayrollPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border last:border-0">
-                <td className="px-5 py-3 font-medium">{r.employee?.name || "—"}</td>
+                <td className="px-5 py-3 font-medium">{r.employee?.name || "N/A"}</td>
                 <td className="px-5 py-3 text-muted">{MONTHS[r.month - 1]} {r.year}</td>
                 <td className="px-5 py-3 text-muted">৳{r.basic.toLocaleString()}</td>
                 <td className="px-5 py-3 text-success">+৳{r.bonus.toLocaleString()}</td>

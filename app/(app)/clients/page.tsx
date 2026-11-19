@@ -159,7 +159,7 @@ export default function ClientsPage() {
                     {c.contactPerson && <p className="text-foreground">{c.contactPerson}</p>}
                     {c.email && <p className="flex items-center gap-1.5 text-xs mt-0.5"><Mail className="w-3 h-3" />{c.email}</p>}
                     {c.phone && <p className="flex items-center gap-1.5 text-xs mt-0.5"><Phone className="w-3 h-3" />{c.phone}</p>}
-                    {!c.contactPerson && !c.email && !c.phone && "—"}
+                    {!c.contactPerson && !c.email && !c.phone && "N/A"}
                   </td>
                   <td className="px-5 py-3 text-right whitespace-nowrap">
                     <p className="font-semibold">{c.projectCount}</p>

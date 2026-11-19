@@ -94,13 +94,13 @@ export default function AttendancePage() {
                       {r.employee?.name.split(" ").map((p) => p[0]).slice(0, 2).join("") || "?"}
                     </div>
                     <div>
-                      <p className="font-medium">{r.employee?.name || "—"}</p>
+                      <p className="font-medium">{r.employee?.name || "N/A"}</p>
                       <p className="text-xs text-muted">{r.employee?.position}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-muted">{r.checkIn || "—"}</td>
-                <td className="px-5 py-3 text-muted">{r.checkOut || "—"}</td>
+                <td className="px-5 py-3 text-muted">{r.checkIn || "N/A"}</td>
+                <td className="px-5 py-3 text-muted">{r.checkOut || "N/A"}</td>
                 <td className="px-5 py-3"><Badge status={r.status} /></td>
                 <td className="px-5 py-3">
                   {canManage && r.approvalStatus === "pending" ? (
@@ -135,10 +135,10 @@ export default function AttendancePage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-muted">—</td>
-                <td className="px-5 py-3 text-muted">—</td>
+                <td className="px-5 py-3 text-muted">N/A</td>
+                <td className="px-5 py-3 text-muted">N/A</td>
                 <td className="px-5 py-3"><span className="text-xs text-muted">Not marked</span></td>
-                <td className="px-5 py-3 text-muted">—</td>
+                <td className="px-5 py-3 text-muted">N/A</td>
                 <td className="px-5 py-3 text-right">
                   {canManage && (
                     <button onClick={() => checkIn(e.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">

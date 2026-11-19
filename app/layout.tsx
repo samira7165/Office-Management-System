@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OfficeHub — HR Management",
+  title: "OfficeHub | HR Management",
   description: "A full-stack office & HR management dashboard",
 };
 

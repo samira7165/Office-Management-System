@@ -56,7 +56,7 @@ export default function MyLeavesPage() {
               <tr key={l.id} className="border-b border-border last:border-0">
                 <td className="px-5 py-3 capitalize text-muted">{l.type}</td>
                 <td className="px-5 py-3 text-muted">{l.startDate} → {l.endDate}</td>
-                <td className="px-5 py-3 text-muted max-w-[280px] truncate">{l.reason || "—"}</td>
+                <td className="px-5 py-3 text-muted max-w-[280px] truncate">{l.reason || "N/A"}</td>
                 <td className="px-5 py-3"><Badge status={l.status} /></td>
               </tr>
             ))}

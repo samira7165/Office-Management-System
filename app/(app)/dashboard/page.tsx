@@ -81,7 +81,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">Attendance — last 7 days</h3>
+            <h3 className="font-semibold text-sm">Attendance: last 7 days</h3>
           </div>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={stats.attendanceTrend}>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
             {leaves.map((l) => (
               <div key={l.id} className="flex items-center justify-between text-sm">
                 <div>
-                  <p className="font-medium">{l.employee?.name || "—"}</p>
+                  <p className="font-medium">{l.employee?.name || "N/A"}</p>
                   <p className="text-xs text-muted capitalize">{l.type} • {l.startDate} → {l.endDate}</p>
                 </div>
                 <Badge status={l.status} />

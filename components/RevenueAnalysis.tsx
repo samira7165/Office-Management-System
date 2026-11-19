@@ -92,7 +92,7 @@ export default function RevenueAnalysis() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="card p-5 lg:col-span-2">
-          <h3 className="font-semibold text-sm mb-4">Income vs expenses — last 6 months</h3>
+          <h3 className="font-semibold text-sm mb-4">Income vs expenses: last 6 months</h3>
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={trend} barGap={4}>
               <CartesianGrid vertical={false} stroke="#eaeaf3" />

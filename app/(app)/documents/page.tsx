@@ -79,7 +79,7 @@ export default function DocumentsPage() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm truncate">{d.name}</p>
-              <p className="text-xs text-muted mt-0.5">{d.employee?.name || "Company-wide"} • {d.size}</p>
+              <p className="text-xs text-muted mt-0.5">{d.employee?.name || "Company-wide"}{d.size && d.size !== "—" ? ` • ${d.size}` : ""}</p>
               <p className="text-xs text-muted">{d.uploadDate}</p>
             </div>
             <div className="flex flex-col gap-1.5">

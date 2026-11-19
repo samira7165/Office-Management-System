@@ -57,10 +57,10 @@ export default function MyAttendancePage() {
     <div className="space-y-4">
       <div className="card p-5 flex items-center justify-between">
         <div>
-          <p className="font-semibold">Today — {today}</p>
+          <p className="font-semibold">Today, {today}</p>
           {todayRow ? (
             <p className="text-sm text-muted mt-1">
-              In: {todayRow.checkIn || "—"} · Out: {todayRow.checkOut || "—"}
+              In: {todayRow.checkIn || "N/A"} · Out: {todayRow.checkOut || "N/A"}
             </p>
           ) : (
             <p className="text-sm text-muted mt-1">You haven&apos;t checked in yet today.</p>
@@ -97,8 +97,8 @@ export default function MyAttendancePage() {
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border last:border-0">
                 <td className="px-5 py-3 font-medium">{r.date}</td>
-                <td className="px-5 py-3 text-muted">{r.checkIn || "—"}</td>
-                <td className="px-5 py-3 text-muted">{r.checkOut || "—"}</td>
+                <td className="px-5 py-3 text-muted">{r.checkIn || "N/A"}</td>
+                <td className="px-5 py-3 text-muted">{r.checkOut || "N/A"}</td>
                 <td className="px-5 py-3"><Badge status={r.status} /></td>
                 <td className="px-5 py-3"><Badge status={r.approvalStatus} /></td>
               </tr>

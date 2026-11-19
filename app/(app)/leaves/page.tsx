@@ -71,10 +71,10 @@ export default function LeavesPage() {
           <tbody>
             {leaves.map((l) => (
               <tr key={l.id} className="border-b border-border last:border-0">
-                <td className="px-5 py-3 font-medium">{l.employee?.name || "—"}</td>
+                <td className="px-5 py-3 font-medium">{l.employee?.name || "N/A"}</td>
                 <td className="px-5 py-3 capitalize text-muted">{l.type}</td>
                 <td className="px-5 py-3 text-muted">{l.startDate} → {l.endDate}</td>
-                <td className="px-5 py-3 text-muted max-w-[220px] truncate">{l.reason || "—"}</td>
+                <td className="px-5 py-3 text-muted max-w-[220px] truncate">{l.reason || "N/A"}</td>
                 <td className="px-5 py-3"><Badge status={l.status} /></td>
                 <td className="px-5 py-3">
                   {role === "TEAM_LEAD" && l.status === "pending" ? (
@@ -90,7 +90,7 @@ export default function LeavesPage() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ) : <span className="text-xs text-muted block text-right">—</span>}
+                  ) : <span className="text-xs text-muted block text-right"></span>}
                 </td>
               </tr>
             ))}
