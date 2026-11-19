@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FolderKanban, PlayCircle, CircleDollarSign, Hourglass, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { FolderKanban, PlayCircle, CircleDollarSign, Hourglass, Plus, Pencil, Trash2, Search, HandCoins } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import { usePermission, usePermissionScope } from "@/components/PermissionsProvider";
 import { PROJECT_STATUSES, CLIENT_TYPES, LONG_TERM_MONTHS, durationLabel, isLongTerm, summarizeProjects } from "@/lib/projects";
+import { ACCOUNT_SUGGESTIONS, fmtTaka } from "@/lib/finance";
+import ProjectPaymentsModal, { type PaymentsInfo } from "@/components/ProjectPaymentsModal";
 
 type Project = {
   id: number; name: string; description: string | null;
@@ -15,6 +17,7 @@ type Project = {
   departmentId: number | null; managerId: number | null; clientId: number | null; longTerm: boolean;
   department: { id: number; name: string; color: string | null } | null;
   manager: { id: number; name: string } | null;
+  payments: PaymentsInfo | null; // only for finance admins
 };
 type Dept = { id: number; name: string };
 type Emp = { id: number; name: string; departmentId: number | null };
@@ -25,6 +28,9 @@ type ClientOpt = { id: number; name: string; type: string };
 const EMPTY_FORM = {
   name: "", description: "", clientId: "", clientName: "", clientType: "client", clientEmail: "",
   value: "", startDate: "", endDate: "", status: "planned", departmentId: "", managerId: "",
+  // Money (new projects, finance admins only): advance already received + expected installments.
+  hasAdvance: false, advanceAmount: "", advanceDate: "", advanceAccount: "",
+  schedule: [] as { label: string; amount: string; dueDate: string }[],
 };
 const money = (n: number) => `৳${Math.round(n).toLocaleString()}`;
 const label = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
@@ -53,6 +59,8 @@ export default function ProjectsPage() {
   const canEdit = usePermission("PROJECTS", "EDIT");
   const canDelete = usePermission("PROJECTS", "DELETE");
   const canCreateClient = usePermission("CLIENTS", "CREATE");
+  const canMoney = usePermissionScope("FINANCE", "CREATE") === "ALL";
+  const [paymentsFor, setPaymentsFor] = useState<number | null>(null);
   const allScope = viewScope === "ALL";
 
   function loadClients() {
@@ -110,6 +118,7 @@ export default function ProjectsPage() {
       clientName: p.clientName, clientType: p.clientType,
       clientEmail: p.clientEmail || "", value: String(p.value), startDate: p.startDate, endDate: p.endDate || "",
       status: p.status, departmentId: p.departmentId ? String(p.departmentId) : "", managerId: p.managerId ? String(p.managerId) : "",
+      hasAdvance: false, advanceAmount: "", advanceDate: "", advanceAccount: "", schedule: [],
     });
     setError("");
     setModalOpen(true);
@@ -124,6 +133,12 @@ export default function ProjectsPage() {
       return;
     }
     if (form.endDate && form.endDate < form.startDate) { setError("End date can't be before the start date"); return; }
+    const withMoney = !editing && canMoney;
+    if (withMoney) {
+      if (form.hasAdvance && (!(Number(form.advanceAmount) > 0) || !form.advanceDate)) { setError("Enter the advance amount and the date it was received"); return; }
+      if (form.schedule.some((s) => !s.label.trim() || !(Number(s.amount) > 0) || !s.dueDate)) { setError("Each scheduled payment needs a name, amount and expected date"); return; }
+      if (plannedTotal > Number(form.value) + 0.005) { setError("Advance plus scheduled payments can't be more than the project value"); return; }
+    }
 
     setSaving(true);
     let clientId = Number(form.clientId);
@@ -153,6 +168,10 @@ export default function ProjectsPage() {
     };
     // Dept-scoped users are pinned to their own department by the server.
     if (allScope) body.departmentId = form.departmentId ? Number(form.departmentId) : null;
+    if (withMoney) {
+      if (form.hasAdvance) body.advance = { amount: Number(form.advanceAmount), date: form.advanceDate, account: form.advanceAccount };
+      body.schedule = form.schedule.map((s) => ({ label: s.label, amount: Number(s.amount), dueDate: s.dueDate }));
+    }
 
     const res = await fetch(editing ? `/api/projects/${editing.id}` : "/api/projects", {
       method: editing ? "PATCH" : "POST",
@@ -172,6 +191,11 @@ export default function ProjectsPage() {
   }
 
   const formLongTerm = form.startDate ? isLongTerm(form.startDate, form.endDate || null) : null;
+  const plannedTotal = (form.hasAdvance ? Number(form.advanceAmount) || 0 : 0) + form.schedule.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const leftToPlan = Math.round(((Number(form.value) || 0) - plannedTotal) * 100) / 100;
+  const setRow = (i: number, patch: Partial<{ label: string; amount: string; dueDate: string }>) =>
+    setForm({ ...form, schedule: form.schedule.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const paymentsProject = paymentsFor ? projects.find((p) => p.id === paymentsFor) ?? null : null;
 
   return (
     <div className="space-y-4">
@@ -224,7 +248,7 @@ export default function ProjectsPage() {
                 <th className="px-5 py-3 font-medium text-right">Value</th>
                 <th className="px-5 py-3 font-medium">Timeline</th>
                 <th className="px-5 py-3 font-medium">Status</th>
-                {(canEdit || canDelete) && <th className="px-5 py-3 font-medium text-right">Action</th>}
+                {(canEdit || canDelete || canMoney) && <th className="px-5 py-3 font-medium text-right">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -249,7 +273,25 @@ export default function ProjectsPage() {
                     </td>
                   )}
                   <td className="px-5 py-3 text-muted">{p.manager?.name || "N/A"}</td>
-                  <td className="px-5 py-3 font-semibold text-right whitespace-nowrap">{money(p.value)}</td>
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                    <p className="font-semibold">{money(p.value)}</p>
+                    {p.payments && (
+                      <div className="mt-1 text-[11px] leading-snug">
+                        <div className="h-1.5 w-28 ml-auto rounded-full bg-border overflow-hidden mb-1">
+                          <div className="h-full bg-success" style={{ width: `${p.value > 0 ? Math.min(100, (p.payments.received / p.value) * 100) : 0}%` }} />
+                        </div>
+                        <p className="text-success font-medium">{money(p.payments.received)} received</p>
+                        {p.payments.due > 0
+                          ? <p className="text-warning font-medium">{money(p.payments.due)} due</p>
+                          : p.value > 0 && <p className="text-success font-medium">Paid in full</p>}
+                        {p.payments.nextDue && (
+                          <p className={p.payments.nextDue.overdue ? "text-danger font-medium" : "text-muted"}>
+                            {p.payments.nextDue.overdue ? "Overdue: " : "Next: "}{money(p.payments.nextDue.remaining)} by {p.payments.nextDue.dueDate}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-muted whitespace-nowrap">
                     <p>{p.startDate} → {p.endDate || "ongoing"}</p>
                     <div className="flex items-center gap-1.5 mt-1">
@@ -258,9 +300,15 @@ export default function ProjectsPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3"><Badge status={p.status} /></td>
-                  {(canEdit || canDelete) && (
+                  {(canEdit || canDelete || canMoney) && (
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        {canMoney && p.payments && (
+                          <button onClick={() => setPaymentsFor(p.id)} title="Payment schedule & payments"
+                            className="h-8 px-2.5 rounded-lg border border-success/40 bg-success-light text-success text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition whitespace-nowrap">
+                            <HandCoins className="w-3.5 h-3.5" /> Payments
+                          </button>
+                        )}
                         {canEdit && (
                           <button onClick={() => openEdit(p)} title="Edit" className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary-light hover:text-primary transition">
                             <Pencil className="w-3.5 h-3.5" />
@@ -382,6 +430,70 @@ export default function ProjectsPage() {
             </div>
           </div>
 
+          {!editing && canMoney && (
+            <div className="rounded-xl border border-border p-3.5 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-1.5"><HandCoins className="w-4 h-4 text-success" /> Payments <span className="text-muted font-normal text-xs">(optional)</span></p>
+
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={form.hasAdvance} className="mt-0.5 w-4 h-4 accent-[var(--primary)]"
+                  onChange={(e) => setForm({ ...form, hasAdvance: e.target.checked, advanceDate: form.advanceDate || new Date().toISOString().slice(0, 10) })} />
+                <span>
+                  <span className="text-sm font-medium block">Client paid an advance</span>
+                  <span className="text-xs text-muted">It&apos;s added to the Finance Ledger as Cash In from this client.</span>
+                </span>
+              </label>
+              {form.hasAdvance && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Advance received (৳)</label>
+                    <input type="number" min="0" step="0.01" value={form.advanceAmount} onChange={(e) => setForm({ ...form, advanceAmount: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Received on</label>
+                    <input type="date" value={form.advanceDate} onChange={(e) => setForm({ ...form, advanceDate: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Account</label>
+                    <input list="adv-accounts" value={form.advanceAccount} onChange={(e) => setForm({ ...form, advanceAccount: e.target.value })} placeholder="bKash, City Bank..." className={inputCls} />
+                    <datalist id="adv-accounts">{ACCOUNT_SUGGESTIONS.map((a) => <option key={a} value={a} />)}</datalist>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-sm font-medium">Payment schedule <span className="text-xs text-muted font-normal">(estimated installments)</span></p>
+                <div className="space-y-2 mt-2">
+                  {form.schedule.map((r, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_110px_140px_auto] gap-2">
+                      <input value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder={i === 0 ? "e.g. 2nd payment" : "e.g. Final on delivery"} className={inputCls} />
+                      <input type="number" min="0" step="0.01" value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
+                      <input type="date" value={r.dueDate} onChange={(e) => setRow(i, { dueDate: e.target.value })} className={inputCls} />
+                      <button type="button" title="Remove" onClick={() => setForm({ ...form, schedule: form.schedule.filter((_, j) => j !== i) })}
+                        className="w-9 h-[42px] rounded-lg border border-border flex items-center justify-center hover:bg-danger-light hover:text-danger"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button"
+                  onClick={() => setForm({ ...form, schedule: [...form.schedule, { label: "", amount: leftToPlan > 0 ? String(leftToPlan) : "", dueDate: "" }] })}
+                  className="mt-2 text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
+                  <Plus className="w-3.5 h-3.5" /> Add expected payment
+                </button>
+              </div>
+
+              {Number(form.value) > 0 && (plannedTotal > 0) && (
+                <p className={`text-xs font-medium ${leftToPlan < 0 ? "text-danger" : leftToPlan === 0 ? "text-success" : "text-muted"}`}>
+                  {leftToPlan < 0
+                    ? `Planned ${fmtTaka(plannedTotal)} is more than the project value`
+                    : leftToPlan === 0
+                      ? "The full project value is covered"
+                      : `${fmtTaka(leftToPlan)} of ${fmtTaka(Number(form.value))} not scheduled yet (you can add it later)`}
+                </p>
+              )}
+            </div>
+          )}
+          {editing && canMoney && (
+            <p className="text-xs text-muted">To change the advance, schedule or payments, use the <span className="font-semibold">Payments</span> button on the project.</p>
+          )}
           {error && <div className="text-sm text-danger bg-danger-light rounded-lg px-3 py-2">{error}</div>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2.5 text-sm font-medium rounded-lg border border-border hover:bg-background">Cancel</button>
@@ -391,6 +503,8 @@ export default function ProjectsPage() {
           </div>
         </form>
       </Modal>
+
+      <ProjectPaymentsModal project={paymentsProject} onClose={() => setPaymentsFor(null)} onChanged={load} />
     </div>
   );
 }

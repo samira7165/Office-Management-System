@@ -105,6 +105,10 @@ export const transactions = pgTable("transactions", {
   // rows with parentId = the deal row's id. Due = dealAmount − (deal.amount + payments).
   dealAmount: doublePrecision("deal_amount"),
   parentId: integer("parent_id"), // FK -> transactions.id (added in scripts/migrate-ledger.ts)
+  // Project payments: which project this money is for, and (optionally) which scheduled
+  // installment it pays. FKs added in scripts/migrate-project-payments.ts.
+  projectId: integer("project_id"),
+  installmentId: integer("installment_id"),
   receiptUrl: varchar("receipt_url", { length: 512 }), // private Vercel Blob URL of the receipt image/PDF
   receiptName: varchar("receipt_name", { length: 191 }),
   createdAt: varchar("created_at", { length: 64 }).notNull(),
@@ -154,6 +158,17 @@ export const projects = pgTable("projects", {
   status: varchar("status", { length: 16 }).notNull().default("planned"), // planned | active | on_hold | completed | cancelled
   departmentId: integer("department_id").references(() => departments.id),
   managerId: integer("manager_id").references(() => employees.id),
+  createdAt: varchar("created_at", { length: 64 }).notNull(),
+});
+
+// A project's payment schedule: the installments the client is expected to pay
+// (estimate). Actual money received is recorded as Cash In transactions that point here.
+export const projectInstallments = pgTable("project_installments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  label: varchar("label", { length: 100 }).notNull(), // e.g. "Advance", "2nd payment", "Final on delivery"
+  amount: doublePrecision("amount").notNull(),
+  dueDate: varchar("due_date", { length: 16 }).notNull(), // expected date, YYYY-MM-DD
   createdAt: varchar("created_at", { length: 64 }).notNull(),
 });
 

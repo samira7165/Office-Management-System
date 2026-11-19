@@ -10,7 +10,8 @@
     "seed": "tsx scripts/seed.ts",
     "migrate:projects": "tsx scripts/migrate-projects.ts",
     "migrate:clients": "tsx scripts/migrate-clients.ts",
-    "migrate:ledger": "tsx scripts/migrate-ledger.ts"
+    "migrate:ledger": "tsx scripts/migrate-ledger.ts",
+    "migrate:project-payments": "tsx scripts/migrate-project-payments.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

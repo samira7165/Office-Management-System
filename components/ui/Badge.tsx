@@ -25,6 +25,8 @@ const MAP: Record<string, { bg: string; text: string; label?: string }> = {
   unpaid: { bg: "var(--warning-light)", text: "var(--warning)" },
   overdue: { bg: "var(--danger-light)", text: "var(--danger)" },
   planned: { bg: "var(--info-light)", text: "var(--info)" },
+  upcoming: { bg: "var(--info-light)", text: "var(--info)" },
+  partly_paid: { bg: "var(--warning-light)", text: "var(--warning)", label: "Partly paid" },
   on_hold: { bg: "var(--warning-light)", text: "var(--warning)", label: "On hold" },
   completed: { bg: "var(--primary-light)", text: "var(--primary)" },
   cancelled: { bg: "var(--border)", text: "var(--muted)" },

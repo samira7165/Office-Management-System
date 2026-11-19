@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { db } from "@/lib/db";
-import { transactions, clients } from "@/lib/schema";
+import { transactions, clients, projects, projectInstallments } from "@/lib/schema";
 import { desc, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { checkAccess, applyScopeFilter } from "@/lib/authz";
@@ -14,9 +14,11 @@ export async function GET() {
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const joined = await db
-    .select({ t: transactions, client: clients })
+    .select({ t: transactions, client: clients, project: { id: projects.id, name: projects.name }, installment: { label: projectInstallments.label } })
     .from(transactions)
     .leftJoin(clients, eq(transactions.clientId, clients.id))
+    .leftJoin(projects, eq(transactions.projectId, projects.id))
+    .leftJoin(projectInstallments, eq(transactions.installmentId, projectInstallments.id))
     .orderBy(desc(transactions.date), desc(transactions.id));
   // Advance deals: total received = the deal row's own advance + every payment linked to it.
   const paidLater = new Map<number, number>();
@@ -37,6 +39,7 @@ export async function GET() {
       client: r.client ? { id: r.client.id, name: r.client.name, type: r.client.type } : null,
       deal,
       parent: parent ? { id: parent.id, date: parent.date, category: parent.category, description: parent.description, dealAmount: parent.dealAmount } : null,
+      project: r.project?.id ? { id: r.project.id, name: r.project.name, installment: r.installment?.label ?? null } : null,
     };
   });
   // Company transactions have no per-employee/department owner column, so anything short
@@ -99,6 +102,8 @@ export async function POST(req: NextRequest) {
     date: input.date,
     account: input.account ?? "",
     clientId,
+    // A payment against a project's deal counts toward that project too.
+    projectId: input.parentId ? rules.projectId ?? null : null,
     dealAmount: input.dealAmount ?? null,
     parentId: input.parentId ?? null,
     receiptUrl,

@@ -20,6 +20,7 @@ type Transaction = {
   dealAmount: number | null; parentId: number | null;
   deal: { received: number; due: number; payments: number } | null; // set on advance deals
   parent: { id: number; date: string; category: string; description: string | null; dealAmount: number | null } | null; // set on payments
+  project: { id: number; name: string; installment: string | null } | null; // set on project payments
 };
 type ClientOpt = { id: number; name: string; type: string };
 type Invoice = { id: number; invoiceNo: string; clientName: string; clientEmail: string; amount: number; issueDate: string; dueDate: string; status: string; notes: string };
@@ -385,6 +386,11 @@ export default function FinancePage() {
                     <td className="px-5 py-3 text-muted">{accountOf(t) || "N/A"}</td>
                     <td className="px-5 py-3 text-muted max-w-[240px]" title={t.description || ""}>
                       <p className="truncate">{t.description || "N/A"}</p>
+                      {t.project && (
+                        <a href={`/projects?client=${encodeURIComponent(t.project.name)}`} className="text-[11px] text-info mt-0.5 truncate block hover:underline">
+                          Project: {t.project.name}{t.project.installment ? ` · ${t.project.installment}` : ""}
+                        </a>
+                      )}
                       {t.parent && (
                         <p className="text-[11px] text-primary mt-0.5 truncate">
                           ↳ payment for {t.parent.date} deal{t.parent.dealAmount != null ? ` (${taka(t.parent.dealAmount)})` : ""}

@@ -23,7 +23,7 @@ type Role = "SUPER_ADMIN" | "HR" | "DEPT_HEAD" | "TEAM_LEAD" | "EMPLOYEE";
 
 async function main() {
   await db.execute(
-    sql`TRUNCATE TABLE permissions, projects, clients, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
+    sql`TRUNCATE TABLE permissions, project_installments, projects, clients, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
   );
 
   // 0. Permissions — the RBAC matrix (lib/authz.ts is the single source of truth).

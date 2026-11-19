@@ -22,7 +22,7 @@ async function paymentsTotal(dealId: number, excludeId?: number) {
  * Advance / deal rules, checked on create and edit (with the row as it WILL be saved).
  * Returns an error message, or null — plus the deal's client so payments inherit it.
  */
-export async function checkDealRules(tx: TxShape): Promise<{ error: string | null; clientId?: number | null }> {
+export async function checkDealRules(tx: TxShape): Promise<{ error: string | null; clientId?: number | null; projectId?: number | null }> {
   if (tx.clientId) {
     const [c] = await db.select({ id: clients.id }).from(clients).where(eq(clients.id, tx.clientId));
     if (!c) return { error: "Client not found" };
@@ -53,7 +53,7 @@ export async function checkDealRules(tx: TxShape): Promise<{ error: string | nul
     if (tx.amount > due + EPS) {
       return { error: due <= EPS ? "That deal is already fully paid" : `This payment is more than the ${fmtTaka(due)} still due on that deal` };
     }
-    return { error: null, clientId: deal.clientId };
+    return { error: null, clientId: deal.clientId, projectId: deal.projectId };
   }
   return { error: null };
 }
