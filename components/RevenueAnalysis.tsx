@@ -25,15 +25,15 @@ function Tile({
 }) {
   const tones = { up: "text-success", down: "text-danger", danger: "text-danger", muted: "text-muted" };
   return (
-    <div className="card p-5 flex items-start justify-between">
-      <div className="min-w-0">
-        <p className="text-xs text-muted font-medium mb-1.5">{label}</p>
-        <p className="text-2xl font-bold truncate">{value}</p>
-        {note && <p className={`text-xs mt-1.5 font-medium ${tones[noteTone]}`}>{note}</p>}
+    <div className="card p-3.5 sm:p-5 min-w-0">
+      <div className="flex items-start justify-between gap-2 mb-1 sm:mb-2">
+        <p className="text-[11px] sm:text-xs text-muted font-medium pt-0.5">{label}</p>
+        <div className={`hidden sm:flex w-9 h-9 -mt-1 -mr-1 shrink-0 rounded-xl items-center justify-center ${tint}`}>
+          <Icon className="w-[18px] h-[18px]" />
+        </div>
       </div>
-      <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${tint}`}>
-        <Icon className="w-5 h-5" />
-      </div>
+      <p className="text-base sm:text-xl 2xl:text-2xl font-bold leading-tight whitespace-nowrap truncate tabular-nums" title={value}>{value}</p>
+      {note && <p className={`text-[11px] sm:text-xs mt-1 sm:mt-1.5 font-medium ${tones[noteTone]}`}>{note}</p>}
     </div>
   );
 }
@@ -66,7 +66,7 @@ export default function RevenueAnalysis() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Tile
           label="Revenue this month" value={money(thisMonth.income)} icon={TrendingUp}
           tint="bg-success-light text-success" note={growthNote}

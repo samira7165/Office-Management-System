@@ -57,6 +57,12 @@ body {
   border-radius: 16px;
 }
 
+/* Phones: keep table cells on one line (dates, amounts, names) and let the table scroll
+   sideways inside its card (every table sits in an overflow-x-auto wrapper). */
+@media (max-width: 639px) {
+  table th, table td { white-space: nowrap; }
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

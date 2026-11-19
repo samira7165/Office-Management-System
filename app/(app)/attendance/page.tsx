@@ -64,8 +64,8 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 text-sm">
           <span className="badge" style={{ background: "var(--success-light)", color: "var(--success)" }}>{present} present</span>
           <span className="badge" style={{ background: "var(--warning-light)", color: "var(--warning)" }}>{late} late</span>
           <span className="badge" style={{ background: "var(--danger-light)", color: "var(--danger)" }}>{absent} absent</span>

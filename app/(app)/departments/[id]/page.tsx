@@ -76,7 +76,7 @@ export default function DepartmentDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Back to departments
       </Link>
 
-      <div className="card p-5 flex items-start justify-between">
+      <div className="card p-4 sm:p-5 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${detail.color}1a`, color: detail.color }}>
             <Users className="w-6 h-6" />
@@ -103,7 +103,7 @@ export default function DepartmentDetailPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Headcount" value={detail.employees.length} icon={Users} tint="primary" />
         <StatCard label="Monthly payroll cost" value={`৳${detail.monthlyCost.toLocaleString()}`} icon={CircleDollarSign} tint="danger" />
         <StatCard label="Monthly budget" value={`৳${detail.budget.toLocaleString()}`} icon={Landmark} tint="info" />
@@ -156,7 +156,7 @@ export default function DepartmentDetailPage() {
               </tr>
             ))}
             {detail.employees.length === 0 && (
-              <tr><td colSpan={4} className="px-5 py-10 text-center text-muted text-sm">No employees in this department yet.</td></tr>
+              <tr><td colSpan={4} className="px-5 py-10 text-left sm:text-center text-muted text-sm">No employees in this department yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -179,7 +179,7 @@ export default function DepartmentDetailPage() {
               {employeeOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium block mb-1.5">Monthly budget (৳)</label>
               <input type="number" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />

@@ -60,7 +60,7 @@ export default function MyPayrollPage() {
                 <td className="px-5 py-3"><Badge status={r.status} /></td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-muted text-sm">No payroll records yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-left sm:text-center text-muted text-sm">No payroll records yet.</td></tr>}
           </tbody>
         </table>
       </div>

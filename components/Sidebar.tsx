@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutGrid, Users, CalendarCheck, CalendarDays, Plane,
-  Wallet, FileText, ListChecks, Building2, LogOut, Network, Landmark, FolderKanban, Contact,
+  Wallet, FileText, ListChecks, Building2, LogOut, Network, Landmark, FolderKanban, Contact, X,
   type LucideIcon,
 } from "lucide-react";
 import type { Module, Scope } from "@/lib/authz";
@@ -102,7 +102,9 @@ const GROUP_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Administration",
 };
 
-export default function Sidebar({ role, permissions }: { role: string; permissions: PermissionEntry[] }) {
+export default function Sidebar({
+  role, permissions, open = false, onClose,
+}: { role: string; permissions: PermissionEntry[]; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const nav = navFor(permissions);
@@ -114,12 +116,22 @@ export default function Sidebar({ role, permissions }: { role: string; permissio
   }
 
   return (
-    <aside className="w-60 shrink-0 h-screen sticky top-0 bg-card border-r border-border flex flex-col">
+    // Below lg it's an off-screen drawer (opened from the Topbar menu button); from lg up it's
+    // the usual fixed column.
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[85vw] h-[100dvh] bg-card border-r border-border flex flex-col
+        transition-transform duration-200 ease-out ${open ? "translate-x-0 shadow-xl" : "-translate-x-full"}
+        lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-60 lg:shrink-0 lg:translate-x-0 lg:shadow-none`}
+      aria-label="Main menu"
+    >
       <div className="flex items-center gap-2 px-5 h-16 border-b border-border">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <Building2 className="w-4 h-4 text-white" />
         </div>
         <span className="font-bold text-[15px] tracking-tight">OfficeHub</span>
+        <button onClick={onClose} className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-background lg:hidden" aria-label="Close menu">
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">

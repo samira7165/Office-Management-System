@@ -55,7 +55,7 @@ export default function MyAttendancePage() {
 
   return (
     <div className="space-y-4">
-      <div className="card p-5 flex items-center justify-between">
+      <div className="card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-semibold">Today, {today}</p>
           {todayRow ? (
@@ -103,7 +103,7 @@ export default function MyAttendancePage() {
                 <td className="px-5 py-3"><Badge status={r.approvalStatus} /></td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-muted text-sm">No attendance records yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-left sm:text-center text-muted text-sm">No attendance records yet.</td></tr>}
           </tbody>
         </table>
       </div>

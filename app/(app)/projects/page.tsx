@@ -199,7 +199,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total projects" value={summary.total} icon={FolderKanban} tint="primary" />
         <StatCard label="Active projects" value={summary.active} icon={PlayCircle} tint="success" />
         <StatCard label="Total project value" value={money(summary.totalValue)} icon={CircleDollarSign} tint="info" />
@@ -207,7 +207,7 @@ export default function ProjectsPage() {
       </div>
 
       <div className="card">
-        <div className="flex flex-wrap items-center gap-3 justify-between px-5 py-4 border-b border-border">
+        <div className="flex flex-wrap items-center gap-3 justify-between px-4 sm:px-5 py-4 border-b border-border">
           <h2 className="font-semibold text-base">{allScope ? "All projects" : "Team projects"}</h2>
           {canCreate && (
             <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
@@ -216,21 +216,21 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-border">
+        <div className="flex flex-wrap gap-2 px-4 sm:px-5 py-3 border-b border-border">
           <div className="relative flex-1 min-w-[180px]">
             <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search project or client..." className={`${inputCls} pl-9 py-2`} />
           </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} w-auto py-2`}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} w-full sm:w-auto py-2`}>
             <option value="">All statuses</option>
             {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{label(s)}</option>)}
           </select>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputCls} w-auto py-2`}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputCls} w-full sm:w-auto py-2`}>
             <option value="">Clients & agencies</option>
             <option value="client">Clients only</option>
             <option value="agency">Agencies only</option>
           </select>
-          <select value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className={`${inputCls} w-auto py-2`}>
+          <select value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className={`${inputCls} w-full sm:w-auto py-2`}>
             <option value="">Any duration</option>
             <option value="long">Long-term</option>
             <option value="short">Short-term</option>
@@ -325,11 +325,11 @@ export default function ProjectsPage() {
                 </tr>
               ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-muted text-sm">
+                <tr><td colSpan={8} className="px-5 py-10 text-left sm:text-center text-muted text-sm">
                   {projects.length === 0 ? "No projects yet." : "No projects match these filters."}
                 </td></tr>
               )}
-              {loading && <tr><td colSpan={8} className="px-5 py-10 text-center text-muted text-sm">Loading projects...</td></tr>}
+              {loading && <tr><td colSpan={8} className="px-5 py-10 text-left sm:text-center text-muted text-sm">Loading projects...</td></tr>}
             </tbody>
           </table>
         </div>
@@ -464,8 +464,8 @@ export default function ProjectsPage() {
                 <p className="text-sm font-medium">Payment schedule <span className="text-xs text-muted font-normal">(estimated installments)</span></p>
                 <div className="space-y-2 mt-2">
                   {form.schedule.map((r, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_110px_140px_auto] gap-2">
-                      <input value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder={i === 0 ? "e.g. 2nd payment" : "e.g. Final on delivery"} className={inputCls} />
+                    <div key={i} className="grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_110px_140px_auto] gap-2">
+                      <input value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder={i === 0 ? "e.g. 2nd payment" : "e.g. Final on delivery"} className={`${inputCls} col-span-3 sm:col-span-1`} />
                       <input type="number" min="0" step="0.01" value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
                       <input type="date" value={r.dueDate} onChange={(e) => setRow(i, { dueDate: e.target.value })} className={inputCls} />
                       <button type="button" title="Remove" onClick={() => setForm({ ...form, schedule: form.schedule.filter((_, j) => j !== i) })}

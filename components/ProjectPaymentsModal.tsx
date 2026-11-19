@@ -84,18 +84,18 @@ export default function ProjectPaymentsModal({
       <div className="space-y-5">
         {/* Summary */}
         <div>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl bg-background p-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+            <div className="rounded-xl bg-background p-2 sm:p-3">
               <p className="text-[11px] text-muted font-medium">Project value</p>
-              <p className="font-bold">{fmtTaka(project.value)}</p>
+              <p className="font-bold text-sm sm:text-base break-words">{fmtTaka(project.value)}</p>
             </div>
-            <div className="rounded-xl bg-success-light p-3">
+            <div className="rounded-xl bg-success-light p-2 sm:p-3">
               <p className="text-[11px] text-muted font-medium">Received</p>
-              <p className="font-bold text-success">{fmtTaka(p.received)}</p>
+              <p className="font-bold text-sm sm:text-base break-words text-success">{fmtTaka(p.received)}</p>
             </div>
-            <div className={`rounded-xl p-3 ${p.due > 0 ? "bg-warning-light" : "bg-success-light"}`}>
+            <div className={`rounded-xl p-2 sm:p-3 ${p.due > 0 ? "bg-warning-light" : "bg-success-light"}`}>
               <p className="text-[11px] text-muted font-medium">Due</p>
-              <p className={`font-bold ${p.due > 0 ? "text-warning" : "text-success"}`}>{p.due > 0 ? fmtTaka(p.due) : "Paid in full"}</p>
+              <p className={`font-bold text-sm sm:text-base break-words ${p.due > 0 ? "text-warning" : "text-success"}`}>{p.due > 0 ? fmtTaka(p.due) : "Paid in full"}</p>
             </div>
           </div>
           <div className="h-2 rounded-full bg-border overflow-hidden mt-3">
@@ -112,8 +112,8 @@ export default function ProjectPaymentsModal({
             {p.installments.map((i) => (
               <div key={i.id} className="rounded-xl border border-border p-3">
                 {editId === i.id ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_140px_auto] gap-2 items-center">
-                    <input value={edit.label} onChange={(e) => setEdit({ ...edit, label: e.target.value })} className={inputCls} />
+                  <div className="grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_120px_140px_auto] gap-2 items-center">
+                    <input value={edit.label} onChange={(e) => setEdit({ ...edit, label: e.target.value })} className={`${inputCls} col-span-3 sm:col-span-1`} />
                     <input type="number" min="0" step="0.01" value={edit.amount} onChange={(e) => setEdit({ ...edit, amount: e.target.value })} className={inputCls} />
                     <input type="date" value={edit.dueDate} onChange={(e) => setEdit({ ...edit, dueDate: e.target.value })} className={inputCls} />
                     <div className="flex gap-1.5">
@@ -149,8 +149,8 @@ export default function ProjectPaymentsModal({
           {p.unscheduled > 0 ? (
             <form onSubmit={addInstallment} className="mt-2 rounded-xl border border-dashed border-border p-3">
               <p className="text-xs text-muted mb-2">{fmtTaka(p.unscheduled)} of the project value isn&apos;t scheduled yet. Add an expected installment:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_140px_auto] gap-2">
-                <input value={inst.label} onChange={(e) => setInst({ ...inst, label: e.target.value })} placeholder="e.g. 2nd payment" className={inputCls} />
+              <div className="grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_120px_140px_auto] gap-2">
+                <input value={inst.label} onChange={(e) => setInst({ ...inst, label: e.target.value })} placeholder="e.g. 2nd payment" className={`${inputCls} col-span-3 sm:col-span-1`} />
                 <input type="number" min="0" step="0.01" value={inst.amount} onChange={(e) => setInst({ ...inst, amount: e.target.value })} placeholder="Amount" className={inputCls} />
                 <input type="date" value={inst.dueDate} onChange={(e) => setInst({ ...inst, dueDate: e.target.value })} className={inputCls} />
                 <button type="submit" disabled={busy} className="h-[38px] px-3 rounded-lg bg-primary text-white text-sm font-semibold flex items-center gap-1 justify-center disabled:opacity-60"><Plus className="w-4 h-4" /> Add</button>
@@ -176,9 +176,9 @@ export default function ProjectPaymentsModal({
                   {p.installments.filter((i) => i.status !== "paid").map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
                 </select>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input value={pay.description} onChange={(e) => setPay({ ...pay, description: e.target.value })} placeholder="Note / TrxID (optional)" className={inputCls} />
-                <button type="submit" disabled={busy} className="shrink-0 px-4 rounded-lg bg-success text-white text-sm font-semibold disabled:opacity-60">{busy ? "Saving..." : "Record payment"}</button>
+                <button type="submit" disabled={busy} className="shrink-0 px-4 py-2 rounded-lg bg-success text-white text-sm font-semibold disabled:opacity-60">{busy ? "Saving..." : "Record payment"}</button>
               </div>
               <p className="text-[11px] text-muted">Saved to the Finance Ledger as Cash In for {project.clientName}. Attach a receipt there if you have one.</p>
             </form>

@@ -35,7 +35,7 @@ export default function ProjectsOverview() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total projects" value={s.total} icon={FolderKanban} tint="primary" />
         <StatCard label="Active projects" value={s.active} icon={PlayCircle} tint="success" />
         <StatCard label="Total project value" value={money(s.totalValue)} icon={CircleDollarSign} tint="info" />

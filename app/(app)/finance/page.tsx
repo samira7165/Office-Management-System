@@ -304,7 +304,7 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard label="Total cash in" value={taka(totals.cashIn)} icon={ArrowDownCircle} tint="success" />
         <StatCard label="Total loans" value={taka(totals.loans)} icon={Landmark} tint="warning" />
         <StatCard label="Total salary" value={taka(totals.salary)} icon={Users} tint="info" />
@@ -313,7 +313,7 @@ export default function FinancePage() {
       </div>
 
       <div className="card">
-        <div className="flex flex-wrap items-center gap-3 justify-between px-5 py-4 border-b border-border">
+        <div className="flex flex-wrap items-center gap-3 justify-between px-4 sm:px-5 py-4 border-b border-border">
           <h2 className="font-semibold text-base">Transactions</h2>
           <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -330,7 +330,7 @@ export default function FinancePage() {
             </button>
           </div>
         )}
-        <div className="flex flex-wrap gap-1.5 px-5 py-3 border-b border-border">
+        <div className="flex flex-wrap gap-1.5 px-4 sm:px-5 py-3 border-b border-border">
           {typeTabs.map((t) => (
             <button
               key={t || "all"}
@@ -430,11 +430,11 @@ export default function FinancePage() {
                 );
               })}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-5 py-10 text-center text-muted text-sm">
+                <tr><td colSpan={9} className="px-5 py-10 text-left sm:text-center text-muted text-sm">
                   {transactions.length === 0 ? "No transactions yet." : "No transactions match your search."}
                 </td></tr>
               )}
-              {loading && <tr><td colSpan={9} className="px-5 py-10 text-center text-muted text-sm">Loading transactions...</td></tr>}
+              {loading && <tr><td colSpan={9} className="px-5 py-10 text-left sm:text-center text-muted text-sm">Loading transactions...</td></tr>}
             </tbody>
           </table>
         </div>
@@ -442,7 +442,7 @@ export default function FinancePage() {
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-border">
           <div>
             <h2 className="font-semibold text-base flex items-center gap-2"><Receipt className="w-4 h-4 text-muted" /> Invoices</h2>
             <p className="text-xs text-muted mt-0.5">Outstanding: <span className="font-semibold text-warning">{taka(outstanding)}</span></p>
@@ -487,7 +487,7 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
-              {invoices.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-center text-muted text-sm">No invoices yet.</td></tr>}
+              {invoices.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-left sm:text-center text-muted text-sm">No invoices yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -561,7 +561,7 @@ export default function FinancePage() {
               <p className="text-xs text-muted">This client will also be added to the Clients page.</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium block mb-1.5">Category</label>
               <input list="tx-categories" value={txForm.category} onChange={(e) => setTxForm({ ...txForm, category: e.target.value })} placeholder={CATEGORY_SUGGESTIONS[txForm.type][0]} className={inputCls} />
@@ -602,7 +602,7 @@ export default function FinancePage() {
               )}
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium block mb-1.5">Date</label>
               <input type="date" value={txForm.date} onChange={(e) => setTxForm({ ...txForm, date: e.target.value })} className={inputCls} />
@@ -653,7 +653,7 @@ export default function FinancePage() {
             <label className="text-sm font-medium block mb-1.5">Amount (৳)</label>
             <input type="number" value={invForm.amount} onChange={(e) => setInvForm({ ...invForm, amount: e.target.value })} className={inputCls} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium block mb-1.5">Issue date</label>
               <input type="date" value={invForm.issueDate} onChange={(e) => setInvForm({ ...invForm, issueDate: e.target.value })} className={inputCls} />

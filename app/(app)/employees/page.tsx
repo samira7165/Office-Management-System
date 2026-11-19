@@ -156,7 +156,7 @@ export default function EmployeesPage() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} className="px-5 py-10 text-center text-muted text-sm">No employees found.</td></tr>
+              <tr><td colSpan={6} className="px-5 py-10 text-left sm:text-center text-muted text-sm">No employees found.</td></tr>
             )}
           </tbody>
         </table>

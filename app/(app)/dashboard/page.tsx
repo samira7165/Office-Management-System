@@ -70,7 +70,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard label="Total Employees" value={stats.totalEmployees} icon={Users} tint="primary" />
         <StatCard label="Active" value={stats.activeEmployees} icon={UserCheck} tint="success" />
         <StatCard label="Present Today" value={stats.presentToday} icon={CheckCircle2} tint="info" />

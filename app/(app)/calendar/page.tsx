@@ -37,7 +37,7 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 card p-4">
         <h2 className="font-semibold">{cursor.toLocaleString("default", { month: "long", year: "numeric" })}</h2>
         <div className="flex gap-2">
           <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-background"><ChevronLeft className="w-4 h-4" /></button>
@@ -47,21 +47,26 @@ export default function CalendarPage() {
       </div>
 
       <div className="card p-4">
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
           {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-            <div key={d} className="text-xs font-medium text-muted text-center py-1">{d}</div>
+            <div key={d} className="text-xs font-medium text-muted text-center py-1"><span className="sm:hidden">{d[0]}</span><span className="hidden sm:inline">{d}</span></div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {cells.map((day, i) => {
             const ds = day ? new Date(year, month, day).toISOString().slice(0, 10) : "";
             const dayLeaves = day ? leavesOnDay(day) : [];
             return (
-              <div key={i} className={`min-h-[90px] rounded-lg border p-1.5 ${day ? "border-border" : "border-transparent"} ${ds === todayStr ? "bg-primary-light border-primary" : ""}`}>
+              <div key={i} className={`min-h-[48px] sm:min-h-[90px] rounded-md sm:rounded-lg border p-1 sm:p-1.5 ${day ? "border-border" : "border-transparent"} ${ds === todayStr ? "bg-primary-light border-primary" : ""}`}>
                 {day && (
                   <>
                     <p className={`text-xs font-medium mb-1 ${ds === todayStr ? "text-primary" : "text-muted"}`}>{day}</p>
-                    <div className="space-y-1">
+                    <div className="flex flex-wrap gap-0.5 sm:hidden">
+                      {dayLeaves.slice(0, 4).map((l) => (
+                        <span key={l.id} className="w-1.5 h-1.5 rounded-full" style={{ background: TYPE_COLOR[l.type] }} title={l.employee?.name} />
+                      ))}
+                    </div>
+                    <div className="hidden sm:block space-y-1">
                       {dayLeaves.slice(0, 2).map((l) => (
                         <div key={l.id} className="text-[10px] px-1.5 py-0.5 rounded truncate" style={{ background: `${TYPE_COLOR[l.type]}1a`, color: TYPE_COLOR[l.type] }}>
                           {l.employee?.name?.split(" ")[0]}
@@ -77,7 +82,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="flex gap-4 text-xs">
+      <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
         {Object.entries(TYPE_COLOR).map(([type, color]) => (
           <span key={type} className="flex items-center gap-1.5 capitalize text-muted">
             <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} /> {type}

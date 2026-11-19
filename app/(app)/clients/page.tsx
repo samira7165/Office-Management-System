@@ -105,7 +105,7 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total clients" value={stats.total} icon={Contact} tint="primary" />
         <StatCard label="Direct clients" value={stats.direct} icon={Building2} tint="info" />
         <StatCard label="Agencies" value={stats.agencies} icon={Handshake} tint="warning" />
@@ -113,7 +113,7 @@ export default function ClientsPage() {
       </div>
 
       <div className="card">
-        <div className="flex flex-wrap items-center gap-3 justify-between px-5 py-4 border-b border-border">
+        <div className="flex flex-wrap items-center gap-3 justify-between px-4 sm:px-5 py-4 border-b border-border">
           <h2 className="font-semibold text-base">Clients & agencies</h2>
           {canCreate && (
             <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition">
@@ -122,12 +122,12 @@ export default function ClientsPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-border">
+        <div className="flex flex-wrap gap-2 px-4 sm:px-5 py-3 border-b border-border">
           <div className="relative flex-1 min-w-[180px]">
             <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, contact, email, phone..." className={`${inputCls} pl-9 py-2`} />
           </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputCls} w-auto py-2`}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputCls} w-full sm:w-auto py-2`}>
             <option value="">Clients & agencies</option>
             <option value="client">Clients only</option>
             <option value="agency">Agencies only</option>
@@ -200,11 +200,11 @@ export default function ClientsPage() {
                 </tr>
               ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={cols} className="px-5 py-10 text-center text-muted text-sm">
+                <tr><td colSpan={cols} className="px-5 py-10 text-left sm:text-center text-muted text-sm">
                   {clients.length === 0 ? "No clients yet." : "No clients match your search."}
                 </td></tr>
               )}
-              {loading && <tr><td colSpan={cols} className="px-5 py-10 text-center text-muted text-sm">Loading clients...</td></tr>}
+              {loading && <tr><td colSpan={cols} className="px-5 py-10 text-left sm:text-center text-muted text-sm">Loading clients...</td></tr>}
             </tbody>
           </table>
         </div>
