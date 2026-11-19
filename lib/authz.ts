@@ -20,7 +20,7 @@ export type Role = "SUPER_ADMIN" | "HR" | "DEPT_HEAD" | "TEAM_LEAD" | "EMPLOYEE"
 export const MODULES = [
   "DASHBOARD", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
   "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
-  "ANNOUNCEMENTS", "AUDIT_LOG",
+  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS",
 ] as const;
 export type Module = (typeof MODULES)[number];
 
@@ -92,6 +92,11 @@ function buildPermissionSeed(): PermissionRule[] {
   add("DEPT_HEAD", "ANNOUNCEMENTS", "CREATE", "DEPARTMENT");
   add("DEPT_HEAD", "AUDIT_LOG", "VIEW", "DEPARTMENT");
   add("DEPT_HEAD", "DASHBOARD", "VIEW", "DEPARTMENT");
+  // Projects: dept heads run their own department's projects (no delete — SUPER_ADMIN only).
+  // HR and EMPLOYEE get no PROJECTS rows, so project values stay hidden from them.
+  add("DEPT_HEAD", "PROJECTS", "VIEW", "DEPARTMENT");
+  add("DEPT_HEAD", "PROJECTS", "CREATE", "DEPARTMENT");
+  add("DEPT_HEAD", "PROJECTS", "EDIT", "DEPARTMENT");
 
   // TEAM_LEAD — read-only within their department (matches the existing canViewDept
   // behavior), plus the ability to create/assign tasks within their own department
@@ -107,6 +112,7 @@ function buildPermissionSeed(): PermissionRule[] {
   add("TEAM_LEAD", "CALENDAR", "VIEW", "DEPARTMENT");
   add("TEAM_LEAD", "ANNOUNCEMENTS", "VIEW", "DEPARTMENT");
   add("TEAM_LEAD", "AUDIT_LOG", "VIEW", "DEPARTMENT");
+  add("TEAM_LEAD", "PROJECTS", "VIEW", "DEPARTMENT");
 
   add("EMPLOYEE", "EMPLOYEES", "VIEW", "SELF");
   add("EMPLOYEE", "ATTENDANCE", "VIEW", "SELF");

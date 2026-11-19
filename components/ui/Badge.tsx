@@ -21,6 +21,14 @@ const MAP: Record<string, { bg: string; text: string; label?: string }> = {
   expense: { bg: "var(--danger-light)", text: "var(--danger)" },
   unpaid: { bg: "var(--warning-light)", text: "var(--warning)" },
   overdue: { bg: "var(--danger-light)", text: "var(--danger)" },
+  planned: { bg: "var(--info-light)", text: "var(--info)" },
+  on_hold: { bg: "var(--warning-light)", text: "var(--warning)", label: "On hold" },
+  completed: { bg: "var(--primary-light)", text: "var(--primary)" },
+  cancelled: { bg: "var(--border)", text: "var(--muted)" },
+  client: { bg: "var(--info-light)", text: "var(--info)" },
+  agency: { bg: "var(--primary-light)", text: "var(--primary)" },
+  long_term: { bg: "var(--primary-light)", text: "var(--primary)", label: "Long-term" },
+  short_term: { bg: "var(--border)", text: "var(--muted)", label: "Short-term" },
 };
 
 export default function Badge({ status }: { status: string }) {

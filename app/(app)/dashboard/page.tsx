@@ -6,6 +6,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
 import RevenueAnalysis from "@/components/RevenueAnalysis";
+import ProjectsOverview from "@/components/ProjectsOverview";
+import { usePermission } from "@/components/PermissionsProvider";
 
 type Stats = {
   totalEmployees: number;
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const [role, setRole] = useState("");
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [selectedDept, setSelectedDept] = useState("");
+  const canViewProjects = usePermission("PROJECTS", "VIEW");
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => setRole(d.user?.role || ""));
@@ -52,6 +55,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {role === "SUPER_ADMIN" && <RevenueAnalysis />}
+      {canViewProjects && <ProjectsOverview />}
 
       {role === "SUPER_ADMIN" && departments.length > 0 && (
         <div className="flex justify-end">

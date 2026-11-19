@@ -1,6 +1,6 @@
+import "./load-env";
 import bcrypt from "bcryptjs";
 import { sql, eq } from "drizzle-orm";
-import "dotenv/config";
 import { db } from "../lib/db";
 import {
   users,
@@ -14,6 +14,7 @@ import {
   transactions,
   invoices,
   permissions,
+  projects,
 } from "../lib/schema";
 import { PERMISSION_SEED } from "../lib/authz";
 
@@ -21,7 +22,7 @@ type Role = "SUPER_ADMIN" | "HR" | "DEPT_HEAD" | "TEAM_LEAD" | "EMPLOYEE";
 
 async function main() {
   await db.execute(
-    sql`TRUNCATE TABLE permissions, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
+    sql`TRUNCATE TABLE permissions, projects, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
   );
 
   // 0. Permissions — the RBAC matrix (lib/authz.ts is the single source of truth).
@@ -284,7 +285,27 @@ async function main() {
     }))
   );
 
-  console.log("Seed complete:", { departments: deptRows.length, employees: empIds.length, users: userRows.length, permissions: PERMISSION_SEED.length });
+  // 11. Projects — client & agency work. Dates are relative to today so the seed always has
+  // a realistic mix of finished, running, upcoming, short-term and long-term projects.
+  const projectSamples: [string, string, string, "client" | "agency", string, number, string, string | null, string, number | null, number | null][] = [
+    ["Padma ERP rollout", "Inventory, sales & accounting modules", "Padma Trading Ltd.", "client", "accounts@padmatrading.com", 1850000, daysAgo(240), daysAgo(-180), "active", engId, empIds[0]],
+    ["Green Delta e-commerce site", "Storefront + bKash/Nagad checkout", "Green Delta Textiles", "client", "finance@greendeltatex.com", 650000, daysAgo(60), daysAgo(-60), "active", engId, empIds[1]],
+    ["Cloud migration", "Move on-prem servers to AWS", "Dhaka Digital Solutions", "client", "accounts@dhakadigital.io", 420000, daysAgo(150), daysAgo(20), "completed", engId, empIds[2]],
+    ["Annual IT support retainer", "Ongoing helpdesk & maintenance", "Chittagong Steel Works", "client", "info@ctgsteel.com", 720000, daysAgo(300), null, "active", engId, empIds[0]],
+    ["Eid campaign 2026", "Social + OOH campaign via agency partner", "Blue Ocean Media", "agency", "projects@blueocean.com.bd", 380000, daysAgo(90), daysAgo(30), "completed", marketingId, empIds[4]],
+    ["Brand refresh", "Logo, guidelines & packaging", "Sylhet Tea Traders", "client", "office@sylhettea.com", 290000, daysAgo(20), daysAgo(-70), "active", designId, empIds[6]],
+    ["Mobile app UX overhaul", "White-label work for agency client", "Pixel Forge Agency", "agency", "hello@pixelforge.io", 540000, daysAgo(-15), daysAgo(-260), "planned", designId, empIds[7]],
+    ["Lead-gen retainer", "Monthly performance marketing", "Growthly Partners", "agency", "ops@growthly.co", 960000, daysAgo(120), daysAgo(-300), "on_hold", marketingId, empIds[3]],
+    ["Bengal Agro export portal", "Buyer portal & shipment tracking", "Bengal Agro Exports", "client", "billing@bengalagro.com", 310000, daysAgo(70), daysAgo(-20), "cancelled", engId, null],
+  ];
+  await db.insert(projects).values(
+    projectSamples.map(([name, description, clientName, clientType, clientEmail, value, startDate, endDate, status, departmentId, managerId]) => ({
+      name, description, clientName, clientType, clientEmail, value, startDate, endDate, status, departmentId, managerId,
+      createdAt: now.toISOString(),
+    }))
+  );
+
+  console.log("Seed complete:", { departments: deptRows.length, employees: empIds.length, users: userRows.length, permissions: PERMISSION_SEED.length, projects: projectSamples.length });
 }
 
 main().catch((err) => {

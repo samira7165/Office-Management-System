@@ -5,7 +5,7 @@ export const roleEnum = pgEnum("role", ["SUPER_ADMIN", "HR", "DEPT_HEAD", "TEAM_
 export const moduleEnum = pgEnum("module", [
   "DASHBOARD", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
   "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
-  "ANNOUNCEMENTS", "AUDIT_LOG",
+  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS",
 ]);
 
 export const actionEnum = pgEnum("action", ["VIEW", "CREATE", "EDIT", "DELETE", "APPROVE", "EXPORT"]);
@@ -111,6 +111,24 @@ export const invoices = pgTable("invoices", {
   dueDate: varchar("due_date", { length: 16 }).notNull(),
   status: varchar("status", { length: 16 }).notNull().default("unpaid"), // unpaid | paid | overdue
   notes: varchar("notes", { length: 512 }).default(""),
+  createdAt: varchar("created_at", { length: 64 }).notNull(),
+});
+
+// Client work the company delivers. "Long-term" isn't stored — it's derived from the dates
+// (see lib/projects.ts isLongTerm) so it can never drift out of sync with them.
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 191 }).notNull(),
+  description: text("description").default(""),
+  clientName: varchar("client_name", { length: 191 }).notNull(),
+  clientType: varchar("client_type", { length: 16 }).notNull().default("client"), // client | agency
+  clientEmail: varchar("client_email", { length: 191 }).default(""),
+  value: doublePrecision("value").notNull().default(0),
+  startDate: varchar("start_date", { length: 16 }).notNull(), // YYYY-MM-DD
+  endDate: varchar("end_date", { length: 16 }), // null = ongoing / no fixed end
+  status: varchar("status", { length: 16 }).notNull().default("planned"), // planned | active | on_hold | completed | cancelled
+  departmentId: integer("department_id").references(() => departments.id),
+  managerId: integer("manager_id").references(() => employees.id),
   createdAt: varchar("created_at", { length: 64 }).notNull(),
 });
 
