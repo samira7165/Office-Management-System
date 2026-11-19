@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowDownCircle, Landmark, Users, ArrowUpCircle, Wallet, Plus, Trash2, Pencil, Search,
+  ArrowDownCircle, Landmark, Users, ArrowUpCircle, Wallet, Plus, Trash2, Pencil, Search, Package,
   FileSpreadsheet, ImageIcon, ImagePlus, Receipt, Paperclip, HandCoins,
 } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
+import FinanceBreakdown from "@/components/FinanceBreakdown";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import {
@@ -21,6 +22,7 @@ type Transaction = {
   deal: { received: number; due: number; payments: number } | null; // set on advance deals
   parent: { id: number; date: string; category: string; description: string | null; dealAmount: number | null } | null; // set on payments
   project: { id: number; name: string; installment: string | null } | null; // set on project payments
+  projectId: number | null;
 };
 type ClientOpt = { id: number; name: string; type: string };
 type Invoice = { id: number; invoiceNo: string; clientName: string; clientEmail: string; amount: number; issueDate: string; dueDate: string; status: string; notes: string };
@@ -236,7 +238,7 @@ export default function FinancePage() {
     const s = summarizeLedger(filtered);
     const pad = ["", "", "", ""]; // line totals up under "Amount (BDT)"
     const summary = [[], ["Total Cash In", ...pad, s.cashIn], ["Total Loans", ...pad, s.loans], ["Total Salary", ...pad, -s.salary],
-      ["Total Expenses", ...pad, -s.expenses], ["Net Balance", ...pad, s.net]];
+      ["Total Expenses", ...pad, -s.expenses], ["Total Asset Buys", ...pad, -s.assets], ["Net Balance", ...pad, s.net]];
     const csv = [header, ...rows, ...summary].map((r) => r.map(csvCell).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -304,13 +306,16 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard label="Total cash in" value={taka(totals.cashIn)} icon={ArrowDownCircle} tint="success" />
-        <StatCard label="Total loans" value={taka(totals.loans)} icon={Landmark} tint="warning" />
+        <StatCard label="Office loans" value={taka(totals.loans)} icon={Landmark} tint="warning" />
         <StatCard label="Total salary" value={taka(totals.salary)} icon={Users} tint="info" />
         <StatCard label="Total expenses" value={taka(totals.expenses)} icon={ArrowUpCircle} tint="danger" />
+        <StatCard label="Asset buys" value={taka(totals.assets)} icon={Package} tint="primary" />
         <StatCard label="Net balance" value={taka(totals.net)} icon={Wallet} tint="primary" />
       </div>
+
+      <FinanceBreakdown rows={transactions} />
 
       <div className="card">
         <div className="flex flex-wrap items-center gap-3 justify-between px-4 sm:px-5 py-4 border-b border-border">
@@ -506,7 +511,7 @@ export default function FinancePage() {
           )}
           <div>
             <label className="text-sm font-medium block mb-1.5">Type</label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
               {TX_TYPES.map((t) => (
                 <button
                   type="button" key={t} disabled={!!txForm.parentId || (editingTx?.deal?.payments ?? 0) > 0}

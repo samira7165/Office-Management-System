@@ -1,17 +1,18 @@
 // Ledger rules shared by the finance API, the Finance page and the dashboard revenue analysis.
 // No DB imports — safe to use from client components.
 
-export const TX_TYPES = ["cash_in", "loan", "salary", "expense"] as const;
+export const TX_TYPES = ["cash_in", "loan", "salary", "expense", "asset"] as const;
 export type TxType = (typeof TX_TYPES)[number];
 
 export const TX_TYPE_LABEL: Record<TxType, string> = {
   cash_in: "Cash In",
-  loan: "Loan",
+  loan: "Office Loan",
   salary: "Salary",
   expense: "Expense",
+  asset: "Asset Buy",
 };
 
-/** Money coming in: cash received and loans taken. Salary and expenses go out. */
+/** Money coming in: cash received and loans taken. Salary, expenses and asset buys go out. */
 export function isInflow(type: string): boolean {
   return type === "cash_in" || type === "loan" || type === "income"; // "income" = pre-ledger rows
 }
@@ -21,9 +22,9 @@ export function isRevenue(type: string): boolean {
   return type === "cash_in" || type === "income";
 }
 
-/** Money spent running the business (salary + other expenses). */
+/** Money spent (salary, expenses, and assets bought — cash leaves the business either way). */
 export function isSpending(type: string): boolean {
-  return type === "salary" || type === "expense";
+  return type === "salary" || type === "expense" || type === "asset";
 }
 
 /** Suggested categories per type (the field still accepts anything). */
@@ -31,8 +32,58 @@ export const CATEGORY_SUGGESTIONS: Record<TxType, string[]> = {
   cash_in: ["Client", "Sales", "Investment", "Refund", "Other"],
   loan: ["Bank loan", "Personal loan", "Director loan", "Other"],
   salary: ["Salary", "Bonus", "Advance", "Overtime"],
-  expense: ["Rent", "Utilities", "Marketing", "Software", "Office supplies", "Transport", "Food", "Other"],
+  expense: ["Daily expense", "Utilities", "Rent", "Marketing", "Software", "Office supplies", "Transport", "Food", "Other"],
+  asset: ["Computer / laptop", "Furniture", "Office equipment", "Phone / tablet", "Vehicle", "Software license", "Other"],
 };
+
+/** Utility bills, matched from the category name (electricity, water, gas, internet...). */
+export function isUtility(category: string): boolean {
+  return /utilit|electric|water|gas\b|internet|wifi|wi-fi|broadband|phone bill|mobile bill/i.test(category);
+}
+
+/** Small day-to-day office spending (tea, snacks, stationery, conveyance...). */
+export function isDailyExpense(category: string): boolean {
+  return /daily|tea|snack|conveyance|petty/i.test(category);
+}
+
+type BreakdownRow = { type: string; amount: number; category: string; projectId?: number | null };
+
+/**
+ * Where the money came from and went. Feeds the Finance breakdown panel:
+ * project income vs salary paid, plus utility, daily office, asset and loan totals.
+ */
+export function ledgerBreakdown(rows: BreakdownRow[]) {
+  const sum = (pred: (r: BreakdownRow) => boolean) => Math.round(rows.filter(pred).reduce((s, r) => s + r.amount, 0) * 100) / 100;
+  const projectCashIn = sum((r) => isRevenue(r.type) && !!r.projectId);
+  const otherCashIn = sum((r) => isRevenue(r.type) && !r.projectId);
+  const salary = sum((r) => r.type === "salary");
+  const utilities = sum((r) => r.type === "expense" && isUtility(r.category));
+  const daily = sum((r) => r.type === "expense" && !isUtility(r.category) && isDailyExpense(r.category));
+  const otherExpenses = sum((r) => r.type === "expense" && !isUtility(r.category) && !isDailyExpense(r.category));
+  const assets = sum((r) => r.type === "asset");
+  const loans = sum((r) => r.type === "loan");
+
+  // Expense + asset totals per category, biggest first.
+  const byCategory = new Map<string, { category: string; type: string; amount: number }>();
+  for (const r of rows) {
+    if (r.type !== "expense" && r.type !== "asset") continue;
+    const key = `${r.type}:${r.category.trim().toLowerCase()}`;
+    const c = byCategory.get(key) ?? { category: r.category.trim(), type: r.type, amount: 0 };
+    c.amount += r.amount;
+    byCategory.set(key, c);
+  }
+
+  return {
+    projectCashIn, otherCashIn, totalCashIn: projectCashIn + otherCashIn,
+    salary,
+    // Share of project income paid out as salary, and what's left after salary.
+    salaryShareOfProject: projectCashIn > 0 ? (salary / projectCashIn) * 100 : null,
+    salaryShareOfAll: projectCashIn + otherCashIn > 0 ? (salary / (projectCashIn + otherCashIn)) * 100 : null,
+    projectLeftAfterSalary: projectCashIn - salary,
+    utilities, daily, otherExpenses, assets, loans,
+    categories: [...byCategory.values()].sort((a, b) => b.amount - a.amount),
+  };
+}
 
 export const ACCOUNT_SUGGESTIONS = ["City Bank", "BRAC Bank", "Dutch-Bangla Bank", "bKash", "Nagad", "Rocket", "Cash"];
 
@@ -44,7 +95,8 @@ export function summarizeLedger(rows: LedgerRow[]) {
   const loans = sum((t) => t === "loan");
   const salary = sum((t) => t === "salary");
   const expenses = sum((t) => t === "expense");
-  return { cashIn, loans, salary, expenses, net: cashIn + loans - salary - expenses };
+  const assets = sum((t) => t === "asset");
+  return { cashIn, loans, salary, expenses, assets, net: cashIn + loans - salary - expenses - assets };
 }
 
 /** Receipts: images or PDF, kept under Vercel's ~4.5 MB request limit. */
@@ -74,7 +126,7 @@ export function parseTxInput(get: (k: string) => unknown, has: (k: string) => bo
   const str = (k: string) => { const v = get(k); return typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim(); };
 
   if (!partial || has("type")) {
-    if (!(TX_TYPES as readonly string[]).includes(str("type"))) return { error: "Type must be Cash In, Loan, Salary or Expense" };
+    if (!(TX_TYPES as readonly string[]).includes(str("type"))) return { error: "Type must be Cash In, Office Loan, Salary, Expense or Asset Buy" };
     out.type = str("type") as TxType;
   }
   if (!partial || has("category")) {

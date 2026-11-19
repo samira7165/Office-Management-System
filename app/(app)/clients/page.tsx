@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Contact, Building2, Handshake, CircleDollarSign, Plus, Pencil, Trash2, Search, Mail, Phone, ArrowRight } from "lucide-react";
+import { Contact, Building2, Handshake, CircleDollarSign, Plus, Pencil, Trash2, Search, Mail, Phone, ArrowRight, TrendingUp, TrendingDown, Trophy } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
@@ -26,6 +26,7 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [sortBy, setSortBy] = useState("value_desc");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
@@ -55,11 +56,29 @@ export default function ClientsPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return clients.filter((c) =>
+    const rows = clients.filter((c) =>
       (!typeFilter || c.type === typeFilter) &&
       (!needle || [c.name, c.contactPerson, c.email, c.phone].some((v) => v?.toLowerCase().includes(needle)))
     );
-  }, [clients, q, typeFilter]);
+    const byName = (a: Client, b: Client) => a.name.localeCompare(b.name);
+    const sorters: Record<string, (a: Client, b: Client) => number> = {
+      value_desc: (a, b) => b.totalValue - a.totalValue || byName(a, b),
+      value_asc: (a, b) => a.totalValue - b.totalValue || byName(a, b),
+      projects_desc: (a, b) => b.projectCount - a.projectCount || b.totalValue - a.totalValue,
+      name: byName,
+    };
+    return [...rows].sort(sorters[sortBy] ?? byName);
+  }, [clients, q, typeFilter, sortBy]);
+
+  // Highlights only consider clients that actually have project value.
+  const highlights = useMemo(() => {
+    const withValue = clients.filter((c) => c.totalValue > 0);
+    if (withValue.length === 0) return null;
+    const top = withValue.reduce((a, b) => (b.totalValue > a.totalValue ? b : a));
+    const low = withValue.reduce((a, b) => (b.totalValue < a.totalValue ? b : a));
+    const most = clients.reduce((a, b) => (b.projectCount > a.projectCount || (b.projectCount === a.projectCount && b.totalValue > a.totalValue) ? b : a));
+    return { top, low, most };
+  }, [clients]);
 
   function openAdd() {
     setEditing(null);
@@ -112,6 +131,31 @@ export default function ClientsPage() {
         <StatCard label="Total project value" value={money(stats.value)} icon={CircleDollarSign} tint="success" />
       </div>
 
+      {highlights && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          {[
+            { title: "Highest value client", c: highlights.top, icon: TrendingUp, color: "var(--success)", stat: money(highlights.top.totalValue), sort: "value_desc" },
+            { title: "Lowest value client", c: highlights.low, icon: TrendingDown, color: "var(--warning)", stat: money(highlights.low.totalValue), sort: "value_asc" },
+            { title: "Most projects", c: highlights.most, icon: Trophy, color: "var(--primary)", stat: `${highlights.most.projectCount} project${highlights.most.projectCount === 1 ? "" : "s"}`, sort: "projects_desc" },
+          ].map(({ title, c, icon: Icon, color, stat, sort }) => (
+            <button key={title} onClick={() => setSortBy(sort)} title="Sort the list this way"
+              className={`card p-4 text-left flex items-center gap-3 min-w-0 hover:border-primary transition ${sortBy === sort ? "border-primary ring-2 ring-primary/15" : ""}`}>
+              <span className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center" style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, color }}>
+                <Icon className="w-5 h-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="text-[11px] text-muted font-medium block">{title}</span>
+                <span className="font-semibold block truncate">{c.name}</span>
+                <span className="text-xs block truncate" style={{ color }}>
+                  {stat}{sort !== "projects_desc" && ` · ${c.projectCount} project${c.projectCount === 1 ? "" : "s"}`}
+                  {sort === "projects_desc" && ` · ${money(c.totalValue)}`}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="card">
         <div className="flex flex-wrap items-center gap-3 justify-between px-4 sm:px-5 py-4 border-b border-border">
           <h2 className="font-semibold text-base">Clients & agencies</h2>
@@ -131,6 +175,12 @@ export default function ClientsPage() {
             <option value="">Clients & agencies</option>
             <option value="client">Clients only</option>
             <option value="agency">Agencies only</option>
+          </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={`${inputCls} w-full sm:w-auto py-2`} aria-label="Sort clients">
+            <option value="value_desc">Highest project value</option>
+            <option value="value_asc">Lowest project value</option>
+            <option value="projects_desc">Most projects</option>
+            <option value="name">Name (A to Z)</option>
           </select>
         </div>
 
