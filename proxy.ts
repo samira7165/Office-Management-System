@@ -34,6 +34,8 @@ const PATH_MODULE_MAP: [string, Module][] = [
   ["/calendar", "CALENDAR"],
   ["/projects", "PROJECTS"],
   ["/api/projects", "PROJECTS"],
+  ["/clients", "CLIENTS"],
+  ["/api/clients", "CLIENTS"],
   ["/api/dashboard", "DASHBOARD"],
   ["/api/employees", "EMPLOYEES"],
   ["/api/attendance", "ATTENDANCE"],

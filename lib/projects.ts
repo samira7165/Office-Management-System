@@ -43,7 +43,7 @@ export function durationLabel(startDate: string, endDate: string | null): string
 export type ProjectInput = {
   name: string; description: string; clientName: string; clientType: ClientType; clientEmail: string;
   value: number; startDate: string; endDate: string | null; status: ProjectStatus;
-  departmentId: number | null; managerId: number | null;
+  departmentId: number | null; managerId: number | null; clientId: number | null;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -92,7 +92,7 @@ export function parseProjectInput(body: Record<string, unknown>, partial: boolea
     if (!(PROJECT_STATUSES as readonly string[]).includes(s)) return { error: "Invalid status" };
     out.status = s as ProjectStatus;
   }
-  for (const k of ["departmentId", "managerId"] as const) {
+  for (const k of ["departmentId", "managerId", "clientId"] as const) {
     if (has(k)) {
       const raw = body[k];
       out[k] = raw === null || raw === "" || raw === undefined ? null : Number(raw);

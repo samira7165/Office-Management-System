@@ -12,15 +12,18 @@ type Project = {
   id: number; name: string; description: string | null;
   clientName: string; clientType: string; clientEmail: string | null;
   value: number; startDate: string; endDate: string | null; status: string;
-  departmentId: number | null; managerId: number | null; longTerm: boolean;
+  departmentId: number | null; managerId: number | null; clientId: number | null; longTerm: boolean;
   department: { id: number; name: string; color: string | null } | null;
   manager: { id: number; name: string } | null;
 };
 type Dept = { id: number; name: string };
 type Emp = { id: number; name: string; departmentId: number | null };
 
+type ClientOpt = { id: number; name: string; type: string };
+
+// clientId: "" = not chosen yet, "new" = create a client from the inline fields, else an id.
 const EMPTY_FORM = {
-  name: "", description: "", clientName: "", clientType: "client", clientEmail: "",
+  name: "", description: "", clientId: "", clientName: "", clientType: "client", clientEmail: "",
   value: "", startDate: "", endDate: "", status: "planned", departmentId: "", managerId: "",
 };
 const money = (n: number) => `৳${Math.round(n).toLocaleString()}`;
@@ -32,6 +35,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [employees, setEmployees] = useState<Emp[]>([]);
+  const [clients, setClients] = useState<ClientOpt[]>([]);
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -48,7 +52,12 @@ export default function ProjectsPage() {
   const canCreate = usePermission("PROJECTS", "CREATE");
   const canEdit = usePermission("PROJECTS", "EDIT");
   const canDelete = usePermission("PROJECTS", "DELETE");
+  const canCreateClient = usePermission("CLIENTS", "CREATE");
   const allScope = viewScope === "ALL";
+
+  function loadClients() {
+    fetch("/api/clients").then((r) => (r.ok ? r.json() : [])).then(setClients);
+  }
 
   async function load() {
     const res = await fetch("/api/projects");
@@ -57,7 +66,11 @@ export default function ProjectsPage() {
   }
   useEffect(() => {
     load();
+    loadClients();
     fetch("/api/employees").then((r) => (r.ok ? r.json() : [])).then(setEmployees);
+    // Arriving from the Clients page ("View projects") pre-fills the search with that client.
+    const fromClient = new URLSearchParams(window.location.search).get("client");
+    if (fromClient) setQ(fromClient);
   }, []);
   useEffect(() => {
     if (allScope) fetch("/api/departments").then((r) => (r.ok ? r.json() : [])).then(setDepartments);
@@ -91,7 +104,10 @@ export default function ProjectsPage() {
   function openEdit(p: Project) {
     setEditing(p);
     setForm({
-      name: p.name, description: p.description || "", clientName: p.clientName, clientType: p.clientType,
+      name: p.name, description: p.description || "",
+      // Older projects with a typed-in client (no clientId) open as "new client" so saving links them.
+      clientId: p.clientId ? String(p.clientId) : "new",
+      clientName: p.clientName, clientType: p.clientType,
       clientEmail: p.clientEmail || "", value: String(p.value), startDate: p.startDate, endDate: p.endDate || "",
       status: p.status, departmentId: p.departmentId ? String(p.departmentId) : "", managerId: p.managerId ? String(p.managerId) : "",
     });
@@ -102,22 +118,42 @@ export default function ProjectsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!form.name || !form.clientName || form.value === "" || !form.startDate) {
+    const newClient = form.clientId === "new";
+    if (!form.name || !form.clientId || (newClient && !form.clientName.trim()) || form.value === "" || !form.startDate) {
       setError("Project name, client / agency, value, and start date are required");
       return;
     }
     if (form.endDate && form.endDate < form.startDate) { setError("End date can't be before the start date"); return; }
 
+    setSaving(true);
+    let clientId = Number(form.clientId);
+    if (newClient) {
+      // Create the client first (or reuse it if that name already exists), then link it.
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.clientName, type: form.clientType, email: form.clientEmail }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) clientId = d.id;
+      else if (res.status === 409 && d.id) clientId = d.id;
+      else { setSaving(false); setError(d.error || "Couldn't add the client"); return; }
+      loadClients();
+    }
+
     const body: Record<string, unknown> = {
-      ...form,
+      name: form.name,
+      description: form.description,
+      clientId,
       value: Number(form.value),
+      startDate: form.startDate,
       endDate: form.endDate || null,
+      status: form.status,
       managerId: form.managerId ? Number(form.managerId) : null,
     };
+    // Dept-scoped users are pinned to their own department by the server.
     if (allScope) body.departmentId = form.departmentId ? Number(form.departmentId) : null;
-    else delete body.departmentId; // server pins dept-scoped users to their own department
 
-    setSaving(true);
     const res = await fetch(editing ? `/api/projects/${editing.id}` : "/api/projects", {
       method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -262,22 +298,35 @@ export default function ProjectsPage() {
             <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-sm font-medium block mb-1.5">Client / agency name</label>
-              <input type="text" value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} className={inputCls} />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Type</label>
-              <select value={form.clientType} onChange={(e) => setForm({ ...form, clientType: e.target.value })} className={inputCls}>
-                {CLIENT_TYPES.map((t) => <option key={t} value={t}>{label(t)}</option>)}
-              </select>
-            </div>
-          </div>
           <div>
-            <label className="text-sm font-medium block mb-1.5">Client email</label>
-            <input type="email" value={form.clientEmail} onChange={(e) => setForm({ ...form, clientEmail: e.target.value })} className={inputCls} />
+            <label className="text-sm font-medium block mb-1.5">Client / agency</label>
+            <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className={inputCls}>
+              <option value="">Select a client...</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.type === "agency" ? "Agency client" : "Direct client"})</option>)}
+              {canCreateClient && <option value="new">+ Add a new client</option>}
+            </select>
           </div>
+          {form.clientId === "new" && (
+            <div className="rounded-xl border border-dashed border-border p-3 space-y-3">
+              <p className="text-xs text-muted">This client will be added to the Clients list when you save.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium block mb-1.5">Client / agency name</label>
+                  <input type="text" value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Type</label>
+                  <select value={form.clientType} onChange={(e) => setForm({ ...form, clientType: e.target.value })} className={inputCls}>
+                    {CLIENT_TYPES.map((t) => <option key={t} value={t}>{label(t)}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Client email</label>
+                <input type="email" value={form.clientEmail} onChange={(e) => setForm({ ...form, clientEmail: e.target.value })} className={inputCls} />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

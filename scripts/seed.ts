@@ -15,6 +15,7 @@ import {
   invoices,
   permissions,
   projects,
+  clients,
 } from "../lib/schema";
 import { PERMISSION_SEED } from "../lib/authz";
 
@@ -22,7 +23,7 @@ type Role = "SUPER_ADMIN" | "HR" | "DEPT_HEAD" | "TEAM_LEAD" | "EMPLOYEE";
 
 async function main() {
   await db.execute(
-    sql`TRUNCATE TABLE permissions, projects, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
+    sql`TRUNCATE TABLE permissions, projects, clients, invoices, transactions, tasks, documents, payroll, leaves, attendance, employees, departments, users RESTART IDENTITY`
   );
 
   // 0. Permissions — the RBAC matrix (lib/authz.ts is the single source of truth).
@@ -266,8 +267,13 @@ async function main() {
     ["expense", "software", "SaaS subscriptions (Slack, Notion, AWS)", 20500, daysAgo(38), "card"],
   ];
   await db.insert(transactions).values(
+    // Ledger types (lib/finance.ts): income -> cash_in, salary expenses -> salary.
     txSamples.map(([type, category, description, amount, date, method]) => ({
-      type, category, description, amount, date, method, createdAt: now.toISOString(),
+      type: type === "income" ? "cash_in" : category === "salaries" ? "salary" : type,
+      category: category === "sales" ? "Client" : category === "salaries" ? "Salary" : category.charAt(0).toUpperCase() + category.slice(1),
+      description, amount, date, method,
+      account: method === "bank" ? "City Bank" : method === "mobile_banking" ? "bKash" : method === "card" ? "Card" : "Cash",
+      createdAt: now.toISOString(),
     }))
   );
 
@@ -298,14 +304,35 @@ async function main() {
     ["Lead-gen retainer", "Monthly performance marketing", "Growthly Partners", "agency", "ops@growthly.co", 960000, daysAgo(120), daysAgo(-300), "on_hold", marketingId, empIds[3]],
     ["Bengal Agro export portal", "Buyer portal & shipment tracking", "Bengal Agro Exports", "client", "billing@bengalagro.com", 310000, daysAgo(70), daysAgo(-20), "cancelled", engId, null],
   ];
+  // One client record per distinct client/agency, with contact details; projects link to them.
+  const clientContacts: Record<string, [string, string, string]> = {
+    "Padma Trading Ltd.": ["Mizanur Rahman", "+880 1711-300101", "Motijheel C/A, Dhaka"],
+    "Green Delta Textiles": ["Shirin Akhter", "+880 1711-300102", "Ashulia, Savar"],
+    "Dhaka Digital Solutions": ["Arif Hossain", "+880 1711-300103", "Banani, Dhaka"],
+    "Chittagong Steel Works": ["Jahangir Alam", "+880 1811-300104", "Agrabad, Chattogram"],
+    "Blue Ocean Media": ["Tasnim Hasan", "+880 1911-300105", "Gulshan 2, Dhaka"],
+    "Sylhet Tea Traders": ["Abdul Quddus", "+880 1711-300106", "Zindabazar, Sylhet"],
+    "Pixel Forge Agency": ["Nadia Karim", "+880 1611-300107", "Dhanmondi, Dhaka"],
+    "Growthly Partners": ["Rakib Hasan", "+880 1511-300108", "Mohakhali, Dhaka"],
+    "Bengal Agro Exports": ["Salma Begum", "+880 1711-300109", "Khulna"],
+  };
+  const uniqueClients = [...new Map(projectSamples.map((p) => [p[2], { name: p[2], type: p[3], email: p[4] }])).values()];
+  const clientRows = await db.insert(clients).values(
+    uniqueClients.map((c) => {
+      const [contactPerson, phone, address] = clientContacts[c.name] ?? ["", "", ""];
+      return { ...c, contactPerson, phone, address, notes: "", createdAt: now.toISOString() };
+    })
+  ).returning({ id: clients.id, name: clients.name });
+  const clientIdByName = new Map(clientRows.map((c) => [c.name, c.id]));
+
   await db.insert(projects).values(
     projectSamples.map(([name, description, clientName, clientType, clientEmail, value, startDate, endDate, status, departmentId, managerId]) => ({
-      name, description, clientName, clientType, clientEmail, value, startDate, endDate, status, departmentId, managerId,
+      name, description, clientId: clientIdByName.get(clientName)!, clientName, clientType, clientEmail, value, startDate, endDate, status, departmentId, managerId,
       createdAt: now.toISOString(),
     }))
   );
 
-  console.log("Seed complete:", { departments: deptRows.length, employees: empIds.length, users: userRows.length, permissions: PERMISSION_SEED.length, projects: projectSamples.length });
+  console.log("Seed complete:", { departments: deptRows.length, employees: empIds.length, users: userRows.length, permissions: PERMISSION_SEED.length, projects: projectSamples.length, clients: clientRows.length });
 }
 
 main().catch((err) => {

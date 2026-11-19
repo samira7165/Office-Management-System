@@ -1,23 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { db } from "@/lib/db";
-import { transactions } from "@/lib/schema";
-import { desc } from "drizzle-orm";
+import { transactions, clients } from "@/lib/schema";
+import { desc, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { checkAccess, applyScopeFilter } from "@/lib/authz";
+import { parseTxInput, receiptProblem, publicTx, type TxInput } from "@/lib/finance";
+import { checkDealRules } from "@/lib/finance-db";
 
 export async function GET() {
   const session = await getSession();
   const { allowed, scope } = await checkAccess(session, "FINANCE", "VIEW");
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const rows = await db.select().from(transactions).orderBy(desc(transactions.date));
+  const joined = await db
+    .select({ t: transactions, client: clients })
+    .from(transactions)
+    .leftJoin(clients, eq(transactions.clientId, clients.id))
+    .orderBy(desc(transactions.date), desc(transactions.id));
+  // Advance deals: total received = the deal row's own advance + every payment linked to it.
+  const paidLater = new Map<number, number>();
+  for (const { t } of joined) if (t.parentId) paidLater.set(t.parentId, (paidLater.get(t.parentId) ?? 0) + t.amount);
+  const byId = new Map(joined.map(({ t }) => [t.id, t]));
+
+  const rows = joined.map((r) => {
+    const t = r.t;
+    const deal = t.dealAmount != null
+      ? (() => {
+          const received = Math.round((t.amount + (paidLater.get(t.id) ?? 0)) * 100) / 100;
+          return { received, due: Math.max(0, Math.round((t.dealAmount - received) * 100) / 100), payments: joined.filter((x) => x.t.parentId === t.id).length };
+        })()
+      : null;
+    const parent = t.parentId ? byId.get(t.parentId) : undefined;
+    return {
+      ...t,
+      client: r.client ? { id: r.client.id, name: r.client.name, type: r.client.type } : null,
+      deal,
+      parent: parent ? { id: parent.id, date: parent.date, category: parent.category, description: parent.description, dealAmount: parent.dealAmount } : null,
+    };
+  });
   // Company transactions have no per-employee/department owner column, so anything short
   // of "ALL" scope (e.g. HR's FINANCE VIEW(SELF)) resolves to nothing visible here — HR's
   // own finance visibility is through the payroll module, which they do have in full.
   const data = applyScopeFilter(rows, scope, { employeeId: session!.employeeId, departmentId: session!.departmentId }, {});
-  return NextResponse.json(data);
+  return NextResponse.json(data.map(publicTx));
 }
 
+// Accepts multipart/form-data (so a receipt image can come with the entry) or plain JSON.
 export async function POST(req: NextRequest) {
   const session = await getSession();
   const { allowed, scope } = await checkAccess(session, "FINANCE", "CREATE");
@@ -27,18 +56,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
-  if (!body.type || !body.category || !body.amount || !body.date) {
-    return NextResponse.json({ error: "Type, category, amount, and date are required" }, { status: 400 });
+  let get: (k: string) => unknown;
+  let has: (k: string) => boolean;
+  let receipt: File | null = null;
+  if ((req.headers.get("content-type") || "").includes("multipart/form-data")) {
+    const form = await req.formData();
+    get = (k) => form.get(k);
+    has = (k) => form.has(k);
+    const f = form.get("receipt");
+    if (f instanceof File && f.size > 0) receipt = f;
+  } else {
+    const body = await req.json();
+    get = (k) => body[k];
+    has = (k) => k in body;
   }
+
+  const parsed = parseTxInput(get, has, false);
+  if (!parsed.data) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  const input = parsed.data as TxInput;
+
+  const rules = await checkDealRules({
+    type: input.type, amount: input.amount, clientId: input.clientId ?? null,
+    dealAmount: input.dealAmount ?? null, parentId: input.parentId ?? null,
+  });
+  if (rules.error) return NextResponse.json({ error: rules.error }, { status: 400 });
+  // A payment against a deal always belongs to the deal's client.
+  const clientId = input.parentId ? rules.clientId ?? null : input.clientId ?? null;
+
+  let receiptUrl: string | null = null;
+  if (receipt) {
+    const problem = receiptProblem(receipt);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+    const blob = await put(`receipts/${Date.now()}-${receipt.name}`, receipt, { access: "private", contentType: receipt.type });
+    receiptUrl = blob.url;
+  }
+
   const [created] = await db.insert(transactions).values({
-    type: body.type,
-    category: body.category,
-    description: body.description || "",
-    amount: Number(body.amount),
-    date: body.date,
-    method: body.method || "bank",
+    type: input.type,
+    category: input.category,
+    description: input.description ?? "",
+    amount: input.amount,
+    date: input.date,
+    account: input.account ?? "",
+    clientId,
+    dealAmount: input.dealAmount ?? null,
+    parentId: input.parentId ?? null,
+    receiptUrl,
+    receiptName: receipt ? receipt.name.slice(0, 191) : null,
     createdAt: new Date().toISOString(),
   }).returning();
-  return NextResponse.json(created, { status: 201 });
+  return NextResponse.json(publicTx(created), { status: 201 });
 }

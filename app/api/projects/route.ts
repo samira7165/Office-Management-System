@@ -5,7 +5,7 @@ import { eq, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { checkAccess, applyScopeFilter } from "@/lib/authz";
 import { parseProjectInput, isLongTerm, type ProjectInput } from "@/lib/projects";
-import { validateProjectRelations } from "@/lib/projects-db";
+import { validateProjectRelations, applyClientLink } from "@/lib/projects-db";
 
 export async function GET() {
   const session = await getSession();
@@ -37,7 +37,10 @@ export async function POST(req: NextRequest) {
   const { allowed, scope } = await checkAccess(session, "PROJECTS", "CREATE");
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const parsed = parseProjectInput(await req.json(), false);
+  const body = await req.json();
+  const clientErr = await applyClientLink(body);
+  if (clientErr) return NextResponse.json({ error: clientErr }, { status: 400 });
+  const parsed = parseProjectInput(body, false);
   if (!parsed.data) return NextResponse.json({ error: parsed.error }, { status: 400 });
   const input = parsed.data as ProjectInput;
 
@@ -49,6 +52,7 @@ export async function POST(req: NextRequest) {
   const [created] = await db.insert(projects).values({
     name: input.name,
     description: input.description ?? "",
+    clientId: input.clientId ?? null,
     clientName: input.clientName,
     clientType: input.clientType,
     clientEmail: input.clientEmail ?? "",

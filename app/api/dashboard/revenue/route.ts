@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { transactions, invoices } from "@/lib/schema";
 import { getSession } from "@/lib/auth";
 import { checkAccess } from "@/lib/authz";
+import { isRevenue, isSpending } from "@/lib/finance";
 
 // Revenue analysis for the dashboard. Finance data isn't department-scoped, so only roles
 // with company-wide FINANCE VIEW (scope ALL — i.e. SUPER_ADMIN today) can see it.
@@ -28,8 +29,9 @@ export async function GET() {
   for (const t of txRows) {
     const m = byKey.get(t.date.slice(0, 7));
     if (!m) continue;
-    if (t.type === "income") m.income += t.amount;
-    else if (t.type === "expense") m.expense += t.amount;
+    // Loans are money in but not revenue, so they're left out of income/expense/net here.
+    if (isRevenue(t.type)) m.income += t.amount;
+    else if (isSpending(t.type)) m.expense += t.amount;
   }
   for (const m of months) m.net = m.income - m.expense;
 

@@ -5,7 +5,7 @@ export const roleEnum = pgEnum("role", ["SUPER_ADMIN", "HR", "DEPT_HEAD", "TEAM_
 export const moduleEnum = pgEnum("module", [
   "DASHBOARD", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
   "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
-  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS",
+  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS", "CLIENTS",
 ]);
 
 export const actionEnum = pgEnum("action", ["VIEW", "CREATE", "EDIT", "DELETE", "APPROVE", "EXPORT"]);
@@ -92,12 +92,21 @@ export const documents = pgTable("documents", {
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  type: varchar("type", { length: 16 }).notNull(), // income | expense
-  category: varchar("category", { length: 64 }).notNull(), // sales, salaries, rent, utilities, marketing, software, other
+  type: varchar("type", { length: 16 }).notNull(), // cash_in | loan | salary | expense (see lib/finance.ts)
+  category: varchar("category", { length: 64 }).notNull(), // free text, e.g. Client, Rent, Salary
   description: varchar("description", { length: 255 }).default(""),
   amount: doublePrecision("amount").notNull(),
   date: varchar("date", { length: 16 }).notNull(),
-  method: varchar("method", { length: 32 }).default("bank"), // bank | cash | mobile_banking | card
+  method: varchar("method", { length: 32 }).default("bank"), // legacy: bank | cash | mobile_banking | card
+  account: varchar("account", { length: 64 }).default(""), // account / source, e.g. "City Bank", "bKash"
+  clientId: integer("client_id").references(() => clients.id), // optional: which client/agency paid (or was paid)
+  // Advance / partial payments (Cash In only). A "deal" row has dealAmount = the full agreed
+  // amount and amount = the advance received with it. Later payments are their own Cash In
+  // rows with parentId = the deal row's id. Due = dealAmount − (deal.amount + payments).
+  dealAmount: doublePrecision("deal_amount"),
+  parentId: integer("parent_id"), // FK -> transactions.id (added in scripts/migrate-ledger.ts)
+  receiptUrl: varchar("receipt_url", { length: 512 }), // private Vercel Blob URL of the receipt image/PDF
+  receiptName: varchar("receipt_name", { length: 191 }),
   createdAt: varchar("created_at", { length: 64 }).notNull(),
 });
 
@@ -114,12 +123,28 @@ export const invoices = pgTable("invoices", {
   createdAt: varchar("created_at", { length: 64 }).notNull(),
 });
 
+// Companies the business works for — direct clients or agencies that subcontract work.
+export const clients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 191 }).notNull().unique(),
+  type: varchar("type", { length: 16 }).notNull().default("client"), // client | agency
+  contactPerson: varchar("contact_person", { length: 191 }).default(""),
+  email: varchar("email", { length: 191 }).default(""),
+  phone: varchar("phone", { length: 32 }).default(""),
+  address: varchar("address", { length: 512 }).default(""),
+  notes: text("notes").default(""),
+  createdAt: varchar("created_at", { length: 64 }).notNull(),
+});
+
 // Client work the company delivers. "Long-term" isn't stored — it's derived from the dates
 // (see lib/projects.ts isLongTerm) so it can never drift out of sync with them.
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 191 }).notNull(),
   description: text("description").default(""),
+  // clientId links to the clients list; clientName/Type/Email are a copy of that client's
+  // details, kept in sync by the clients API so project lists don't need a join.
+  clientId: integer("client_id").references(() => clients.id),
   clientName: varchar("client_name", { length: 191 }).notNull(),
   clientType: varchar("client_type", { length: 16 }).notNull().default("client"), // client | agency
   clientEmail: varchar("client_email", { length: 191 }).default(""),

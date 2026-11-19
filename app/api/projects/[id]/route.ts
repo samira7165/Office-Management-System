@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { checkAccess, isInScope } from "@/lib/authz";
 import { parseProjectInput } from "@/lib/projects";
-import { validateProjectRelations } from "@/lib/projects-db";
+import { validateProjectRelations, applyClientLink } from "@/lib/projects-db";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +21,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const parsed = parseProjectInput(await req.json(), true);
+  const body = await req.json();
+  const clientErr = await applyClientLink(body);
+  if (clientErr) return NextResponse.json({ error: clientErr }, { status: 400 });
+  const parsed = parseProjectInput(body, true);
   if (!parsed.data) return NextResponse.json({ error: parsed.error }, { status: 400 });
   const changes = parsed.data;
 

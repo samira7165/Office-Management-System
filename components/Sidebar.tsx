@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutGrid, Users, CalendarCheck, CalendarDays, Plane,
-  Wallet, FileText, ListChecks, Building2, LogOut, Network, Landmark, FolderKanban,
+  Wallet, FileText, ListChecks, Building2, LogOut, Network, Landmark, FolderKanban, Contact,
   type LucideIcon,
 } from "lucide-react";
 import type { Module, Scope } from "@/lib/authz";
@@ -18,7 +18,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 // sidebar code changes. Modules with no page built yet (ANNOUNCEMENTS, AUDIT_LOG, and
 // FINANCE outside ALL scope) resolve to null and are simply omitted.
 const MODULE_ORDER: Module[] = [
-  "DASHBOARD", "PROJECTS", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
+  "DASHBOARD", "PROJECTS", "CLIENTS", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
   "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
   "ANNOUNCEMENTS", "AUDIT_LOG",
 ];
@@ -37,6 +37,7 @@ const MODULE_ICON: Record<Module, LucideIcon> = {
   ANNOUNCEMENTS: CalendarDays,
   AUDIT_LOG: Network,
   PROJECTS: FolderKanban,
+  CLIENTS: Contact,
 };
 
 function resolveNavItem(module: Module, scope: Scope): { href: string; label: string } | null {
@@ -70,6 +71,8 @@ function resolveNavItem(module: Module, scope: Scope): { href: string; label: st
       return { href: "/calendar", label: scope === "DEPARTMENT" ? "Team Calendar" : "Calendar" };
     case "PROJECTS":
       return { href: "/projects", label: scope === "DEPARTMENT" ? "Team Projects" : "Projects" };
+    case "CLIENTS":
+      return { href: "/clients", label: "Clients" };
     default:
       return null; // ANNOUNCEMENTS, AUDIT_LOG — no page built yet
   }

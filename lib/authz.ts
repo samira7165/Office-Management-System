@@ -20,7 +20,7 @@ export type Role = "SUPER_ADMIN" | "HR" | "DEPT_HEAD" | "TEAM_LEAD" | "EMPLOYEE"
 export const MODULES = [
   "DASHBOARD", "EMPLOYEES", "ATTENDANCE", "LEAVES", "TASKS",
   "PAYROLL", "DOCUMENTS", "FINANCE", "DEPARTMENTS", "CALENDAR",
-  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS",
+  "ANNOUNCEMENTS", "AUDIT_LOG", "PROJECTS", "CLIENTS",
 ] as const;
 export type Module = (typeof MODULES)[number];
 
@@ -97,6 +97,10 @@ function buildPermissionSeed(): PermissionRule[] {
   add("DEPT_HEAD", "PROJECTS", "VIEW", "DEPARTMENT");
   add("DEPT_HEAD", "PROJECTS", "CREATE", "DEPARTMENT");
   add("DEPT_HEAD", "PROJECTS", "EDIT", "DEPARTMENT");
+  // Clients are company-wide (not owned by a department). Dept heads can see the list and
+  // add new clients for their projects; editing/deleting client records is SUPER_ADMIN only.
+  add("DEPT_HEAD", "CLIENTS", "VIEW", "ALL");
+  add("DEPT_HEAD", "CLIENTS", "CREATE", "ALL");
 
   // TEAM_LEAD — read-only within their department (matches the existing canViewDept
   // behavior), plus the ability to create/assign tasks within their own department
@@ -113,6 +117,7 @@ function buildPermissionSeed(): PermissionRule[] {
   add("TEAM_LEAD", "ANNOUNCEMENTS", "VIEW", "DEPARTMENT");
   add("TEAM_LEAD", "AUDIT_LOG", "VIEW", "DEPARTMENT");
   add("TEAM_LEAD", "PROJECTS", "VIEW", "DEPARTMENT");
+  add("TEAM_LEAD", "CLIENTS", "VIEW", "ALL");
 
   add("EMPLOYEE", "EMPLOYEES", "VIEW", "SELF");
   add("EMPLOYEE", "ATTENDANCE", "VIEW", "SELF");
